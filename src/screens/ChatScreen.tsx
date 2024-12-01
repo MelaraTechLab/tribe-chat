@@ -1,42 +1,97 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
   Button,
+  FlatList,
   StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import useChatStore from "../store/useChatStore";
+
+// Define the Message type
+type Message = {
+  sentAt: number; // Timestamp indicating when the message was sent
+  text: string; // Message content
+  uuid: string; // Unique identifier for the message
+};
 
 export const ChatScreen = () => {
   const { messages, loadMessages, addMessage } = useChatStore();
   const [inputText, setInputText] = useState("");
 
+  // Load messages from the store when the component mounts
   useEffect(() => {
-    loadMessages(); // Load when start
+    loadMessages();
   }, []);
 
+  // Handle sending a new message
   const handleSendMessage = () => {
     if (inputText.trim()) {
-      addMessage(inputText); // Add message to global status
-      setInputText(""); // Clear Imput
+      addMessage(inputText); // Add the new message to the global state
+      setInputText(""); // Clear the input field
     }
   };
+
+  // Group messages by date
+  const groupMessagesByDate = (messages: Message[]) => {
+    const grouped: Array<
+      | { type: "date"; date: string }
+      | { type: "message"; sentAt: number; text: string; uuid: string }
+    > = [];
+    let lastDate: string | null = null;
+
+    messages.forEach((message) => {
+      const messageDate = new Date(message.sentAt).toDateString();
+      if (messageDate !== lastDate) {
+        grouped.push({ type: "date", date: messageDate }); // Add a date separator
+        lastDate = messageDate;
+      }
+      grouped.push({
+        type: "message",
+        uuid: message.uuid,
+        text: message.text,
+        sentAt: message.sentAt,
+      });
+    });
+
+    return grouped;
+  };
+
+  // Group messages for rendering
+  const groupedMessages = groupMessagesByDate(messages);
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={messages}
-        renderItem={({ item }) => (
-          <View style={styles.messageItem}>
-            <Text style={styles.messageText}>{item.text}</Text>
-            <Text style={styles.timestamp}>
-              {new Date(item.createdAt).toLocaleTimeString()}
-            </Text>
-          </View>
-        )}
-        keyExtractor={(item, index) => item.id || index.toString()}
+        data={groupedMessages}
+        renderItem={({ item }) => {
+          if (item.type === "date") {
+            // Render a date separator
+            return (
+              <View style={styles.dateSeparator}>
+                <Text style={styles.dateText}>{item.date}</Text>
+              </View>
+            );
+          }
+          // Render an individual message
+          return (
+            <View style={styles.messageItem}>
+              <Text style={styles.messageText}>{item.text}</Text>
+              <Text style={styles.timestamp}>
+                {new Date(item.sentAt).toLocaleTimeString()}
+              </Text>
+            </View>
+          );
+        }}
+        keyExtractor={(item, index) => {
+          if (item.type === "message") {
+            return item.uuid; // Unique key for messages
+          } else if (item.type === "date") {
+            return `date-${index}`; // Unique key for dates
+          }
+          return `fallback-${index}`; // Fallback key
+        }}
         style={styles.messageList}
       />
 
@@ -76,6 +131,15 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 5,
   },
+  dateSeparator: {
+    marginVertical: 10,
+    alignItems: "center",
+  },
+  dateText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#444",
+  },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -92,3 +156,5 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
 });
+
+export default ChatScreen;
