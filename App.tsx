@@ -1,20 +1,27 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { View, Text, Button } from 'react-native';
+import useChatStore from './src/store/useChatStore';
 
-export default function App() {
+const App = () => {
+  const { messages, addMessage } = useChatStore();
+
+  const handleAddMessage = () => {
+    const newMessage = {
+      id: Date.now().toString(),
+      text: 'Hello, Zustand!',
+      createdAt: new Date().toISOString(),
+    };
+    addMessage(newMessage);
+  };
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button title="Add Message" onPress={handleAddMessage} />
+      {messages.map((msg) => (
+        <Text key={msg.id}>{msg.text}</Text>
+      ))}
     </View>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
