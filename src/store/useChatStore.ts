@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, PersistStorage } from 'zustand/middleware';
+import { fetchAllMessages, sendMessage } from '../api/chatApi';
 
 // Custom AsyncStorage wrapper for Zustand
 const asyncStorage: PersistStorage<any> = {
@@ -16,6 +17,7 @@ const asyncStorage: PersistStorage<any> = {
   },
 };
 
+// Define the Message interface
 interface Message {
   id: string;
   text: string;
@@ -24,28 +26,54 @@ interface Message {
   reactions?: Record<string, number>;
 }
 
+// Define the ChatState interface
 interface ChatState {
   messages: Message[];
-  addMessage: (message: Message) => void;
-  editMessage: (id: string, newText: string) => void;
+  addMessage: (text: string) => Promise<void>; // Make addMessage async
+  loadMessages: () => Promise<void>; // Make loadMessages async
+  editMessage: (id: string, newText: string) => void; // For future editing
 }
 
+// Zustand store with persistence
 const useChatStore = create<ChatState>()(
   persist(
     (set) => ({
       messages: [],
-      addMessage: (message) =>
-        set((state) => ({ messages: [...state.messages, message] })),
-      editMessage: (id, newText) =>
+
+      // Add a new message by sending it to the API
+      addMessage: async (text: string): Promise<void> => {
+        try {
+          const newMessage = await sendMessage(text); // Call API to send message
+          set((state) => ({
+            messages: [...state.messages, newMessage], // Add to state
+          }));
+        } catch (error) {
+          console.error('Error adding message:', error);
+        }
+      },
+
+      // Load all messages from the API
+      loadMessages: async (): Promise<void> => {
+        try {
+          const messages = await fetchAllMessages(); // Call API to fetch messages
+          set({ messages }); // Update state with fetched messages
+        } catch (error) {
+          console.error('Error loading messages:', error);
+        }
+      },
+
+      // Edit an existing message (future functionality)
+      editMessage: (id: string, newText: string): void => {
         set((state) => ({
           messages: state.messages.map((msg) =>
             msg.id === id ? { ...msg, text: newText, edited: true } : msg
           ),
-        })),
+        }));
+      },
     }),
     {
       name: 'chat-storage',
-      storage: asyncStorage,
+      storage: asyncStorage, // Use custom asyncStorage wrapper
     }
   )
 );
