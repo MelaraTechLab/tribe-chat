@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Button,
   FlatList,
@@ -10,15 +10,23 @@ import {
 import useChatStore from "../store/useChatStore";
 
 // Define the Message type
+type Reaction = {
+  uuid: string; // Unique identifier for the reaction
+  value: string; // Emoji representing the reaction
+  participantUuid: string; // UUID of the user who reacted
+};
+
 type Message = {
   sentAt: number; // Timestamp indicating when the message was sent
   text: string; // Message content
   uuid: string; // Unique identifier for the message
+  reactions?: Reaction[]; // Optional: Array of reactions
 };
 
 export const ChatScreen = () => {
   const { messages, loadMessages, addMessage } = useChatStore();
   const [inputText, setInputText] = useState("");
+  const flatListRef = useRef<FlatList>(null); // Reference for the FlatList
 
   // Load messages from the store when the component mounts
   useEffect(() => {
@@ -30,6 +38,11 @@ export const ChatScreen = () => {
     if (inputText.trim()) {
       addMessage(inputText); // Add the new message to the global state
       setInputText(""); // Clear the input field
+
+      // Scroll to the last message after adding a new one
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100); // Timeout to ensure state updates before scrolling
     }
   };
 
@@ -37,21 +50,41 @@ export const ChatScreen = () => {
   const groupMessagesByDate = (messages: Message[]) => {
     const grouped: Array<
       | { type: "date"; date: string }
-      | { type: "message"; sentAt: number; text: string; uuid: string }
+      | {
+          type: "message";
+          sentAt: number;
+          text: string;
+          uuid: string;
+          reactions?: Reaction[];
+        }
     > = [];
     let lastDate: string | null = null;
 
     messages.forEach((message) => {
-      const messageDate = new Date(message.sentAt).toDateString();
-      if (messageDate !== lastDate) {
-        grouped.push({ type: "date", date: messageDate }); // Add a date separator
-        lastDate = messageDate;
+      const messageDate = new Date(message.sentAt);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      let displayDate = messageDate.toDateString();
+
+      if (messageDate.toDateString() === today.toDateString()) {
+        displayDate = "Today";
+      } else if (messageDate.toDateString() === yesterday.toDateString()) {
+        displayDate = "Yesterday";
       }
+
+      if (displayDate !== lastDate) {
+        grouped.push({ type: "date", date: displayDate });
+        lastDate = displayDate;
+      }
+
       grouped.push({
         type: "message",
         uuid: message.uuid,
         text: message.text,
         sentAt: message.sentAt,
+        reactions: message.reactions,
       });
     });
 
@@ -64,6 +97,7 @@ export const ChatScreen = () => {
   return (
     <View style={styles.container}>
       <FlatList
+        ref={flatListRef} // Attach the ref to FlatList
         data={groupedMessages}
         renderItem={({ item }) => {
           if (item.type === "date") {
@@ -74,13 +108,31 @@ export const ChatScreen = () => {
               </View>
             );
           }
-          // Render an individual message
+          // Render an individual message with reactions
           return (
             <View style={styles.messageItem}>
               <Text style={styles.messageText}>{item.text}</Text>
               <Text style={styles.timestamp}>
                 {new Date(item.sentAt).toLocaleTimeString()}
               </Text>
+
+              {/* Render reactions */}
+              {item.reactions && item.reactions.length > 0 && (
+                <View style={styles.reactionsContainer}>
+                  {item.reactions &&
+                    item.reactions.map((reaction: Reaction) => (
+                      <View key={reaction.uuid} style={styles.reactionItem}>
+                        <Text style={styles.reactionEmoji}>
+                          {reaction.value}
+                        </Text>
+                        <Text style={styles.reactionCount}>
+                          {/* Display count or default to "1" if only one participant */}
+                          {reaction.participantUuid ? "1" : ""}
+                        </Text>
+                      </View>
+                    ))}
+                </View>
+              )}
             </View>
           );
         }}
@@ -139,6 +191,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#444",
+  },
+  reactionsContainer: {
+    flexDirection: "row",
+    marginTop: 5,
+  },
+  reactionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  reactionEmoji: {
+    fontSize: 16,
+    marginRight: 4,
+  },
+  reactionCount: {
+    fontSize: 12,
+    color: "#888",
   },
   inputContainer: {
     flexDirection: "row",

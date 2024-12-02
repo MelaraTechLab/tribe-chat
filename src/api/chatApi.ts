@@ -27,3 +27,18 @@ export const sendMessage = async (text: string) => {
   }
   return response.json();
 };
+
+// Function to add a reaction to a message
+export const addReaction = async (messageUuid: string, reaction: string) => {
+  const response = await fetch(`${API_BASE}/messages/${messageUuid}/reactions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reaction }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to add reaction");
+  }
+
+  return response.json(); // Return the updated message
+};

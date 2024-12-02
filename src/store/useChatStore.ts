@@ -17,13 +17,22 @@ const asyncStorage: PersistStorage<any> = {
   },
 };
 
+// Interface for a reaction
+interface Reaction {
+  uuid: string; // Unique identifier for the reaction
+  value: string; // Emoji representing the reaction
+  participantUuid: string; // UUID of the user who reacted
+}
+
 // Interface for a message object
 interface Message {
   uuid: string; // Unique identifier for each message
   text: string; // Content of the message
   sentAt: number; // Timestamp of when the message was sent
   edited?: boolean; // Optional: Indicates if the message was edited
-  reactions?: Record<string, number>; // Optional: Reactions to the message (e.g., like count)
+  reactions?: Reaction[]; // Optional: Array of reactions
+  authorUuid?: string; // Optional: UUID of the author
+  attachments?: string[]; // Optional: Attachments for the message
 }
 
 // Interface defining the chat store state
@@ -44,14 +53,17 @@ const useChatStore = create<ChatState>()(
       addMessage: async (text: string): Promise<void> => {
         try {
           const newMessageFromApi = await sendMessage(text);
-
+      
           // Transform API response into the expected message format
           const newMessage: Message = {
-            uuid: newMessageFromApi.id, // Map `id` to `uuid`
+            uuid: newMessageFromApi.id,
             text: newMessageFromApi.text,
-            sentAt: new Date(newMessageFromApi.createdAt).getTime(), // Convert date to timestamp
+            sentAt: new Date(newMessageFromApi.createdAt || Date.now()).getTime(), // Ensure sentAt is a timestamp
+            reactions: newMessageFromApi.reactions || [], // Default to empty array if no reactions
+            authorUuid: newMessageFromApi.authorUuid, // Preserve author information
+            attachments: newMessageFromApi.attachments || [], // Preserve attachments
           };
-
+      
           set((state) => ({
             messages: [...state.messages, newMessage], // Add the new message to the current state
           }));
@@ -70,11 +82,13 @@ const useChatStore = create<ChatState>()(
             uuid: msg.id || msg.uuid, // Use `id` or `uuid` as the unique identifier
             text: msg.text || "No content", // Fallback if no text is provided
             sentAt: new Date(msg.createdAt || msg.sentAt).getTime(), // Convert date to timestamp
+            reactions: msg.reactions || [], // Default to empty array if no reactions
+            authorUuid: msg.authorUuid, // Preserve author information
+            attachments: msg.attachments || [], // Preserve attachments
           }));
-
           set({ messages }); // Update the store with the transformed messages
         } catch (error) {
-          console.error("Error loading messages:", error);
+          // console.error("Error loading messages:", error);
         }
       },
 
