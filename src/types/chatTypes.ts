@@ -23,6 +23,7 @@ export type Message = {
   sentAt: number; // Timestamp of when the message was sent
   text: string; // Message content
   authorUuid: string; // UUID of the message's author
+  updatedAt?: number; // Timestamp of when the message was last updated
   reactions?: Reaction[]; // Optional: Array of reactions to the message
   attachments?: Attachment[]; // Optional: Array of attachments (e.g., images)
   replyToMessageUuid?: string; // New field for reply functionality
@@ -43,7 +44,7 @@ export type Reaction = {
 export type Attachment = {
   uuid: string; // Unique identifier for the attachment
   url: string; // URL of the attachment (e.g., image URL)
-  type: string; // Type of the attachment (e.g., "image")
+  type: "image"; // Type of the attachment (e.g., "image")
   width?: number; // Optional: Width of the attachment
   height?: number; // Optional: Height of the attachment
 };

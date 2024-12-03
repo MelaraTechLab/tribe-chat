@@ -342,6 +342,11 @@ export const chatStyles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
+  editedIndicator: {
+    fontSize: 12,
+    color: "#888", 
+  },
+  
   
   
 });

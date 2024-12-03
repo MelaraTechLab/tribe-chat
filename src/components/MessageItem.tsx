@@ -73,7 +73,12 @@ const MessageItem: React.FC<MessageItemProps> = ({
       </TouchableOpacity>
 
       {/* Message content */}
-      <Text style={chatStyles.messageText}>{message.text}</Text>
+      <Text style={chatStyles.messageText}>
+        {message.text}
+        {message.updatedAt && message.sentAt !== message.updatedAt && (
+          <Text style={chatStyles.editedIndicator}> (edited)</Text>
+        )}
+      </Text>
 
       {/* Quoted message (if replying to another message) */}
       {message.replyToMessageUuid && (

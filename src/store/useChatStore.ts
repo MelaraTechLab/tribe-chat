@@ -33,6 +33,7 @@ interface Reaction {
 
 // Interface for a message object
 interface Message {
+  updatedAt: unknown;
   uuid: string; // Unique identifier for each message
   text: string; // Content of the message
   sentAt: number; // Timestamp of when the message was sent
