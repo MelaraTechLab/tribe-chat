@@ -3,6 +3,13 @@ import { create } from 'zustand';
 import { persist, PersistStorage } from 'zustand/middleware';
 import { fetchAllMessages, sendMessage, fetchParticipants } from '../api/chatApi';
 
+/**
+ * Chat Store
+ * This file defines the Zustand store for managing chat data, including messages, participants,
+ * and various operations such as sending, editing, and fetching data. 
+ * It also persists the state using AsyncStorage for continuity across sessions.
+ */
+
 // Custom AsyncStorage wrapper for Zustand to ensure async persistence
 const asyncStorage: PersistStorage<any> = {
   getItem: async (name) => {
@@ -37,14 +44,14 @@ interface Message {
 
 // Interface for a participant object
 interface Participant {
-  id: string; // UUID del participante
-  name: string; // Nombre del participante
-  bio: string; // Breve descripción del participante
-  email: string; // Email del participante
-  jobTitle: string; // Título del trabajo del participante
-  avatarUrl: string; // URL del avatar del participante
-  createdAt: number; // Fecha de creación (timestamp)
-  updatedAt: number; // Fecha de última actualización (timestamp)
+  id: string; // Participant's UUID
+  name: string; // Participant's name
+  bio: string; // Participant's short bio
+  email: string; // Participant's email
+  jobTitle: string; // Participant's job title
+  avatarUrl: string; // Participant's avatar URL
+  createdAt: number; // Timestamp of creation
+  updatedAt: number; // Timestamp of last update
 }
 
 // Interface defining the chat store state
@@ -110,11 +117,9 @@ const useChatStore = create<ChatState>()(
       // Function to load participants from the API and update the store
       fetchParticipants: async (): Promise<void> => {
         try {
-          console.log('fetchParticipants fue llamado'); // Imprime al inicio de la función
           const participantsFromApi = await fetchParticipants();
-          console.log('Datos brutos de participantes desde la API:', participantsFromApi);
-      
-          // Transformar la lista de participantes en un mapa
+
+          // Transform the list of participants into a map
           const participants: Record<string, Participant> = participantsFromApi.reduce(
             (acc: Record<string, Participant>, participant: any) => {
               acc[participant.uuid] = {
@@ -131,14 +136,12 @@ const useChatStore = create<ChatState>()(
             },
             {}
           );
-      
-          console.log('Participantes transformados para el estado:', participants);
-      
+
           set({ participants });
         } catch (error) {
-          console.error('Error al obtener participantes desde la API:', error);
+          console.error('Error fetching participants from API:', error);
         }
-      },      
+      },
 
       // Function to edit an existing message by its ID
       editMessage: (id: string, newText: string): void => {

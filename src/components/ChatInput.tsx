@@ -1,24 +1,35 @@
+/**
+ * ChatInput Component
+ *
+ * This component provides a text input and a send button for sending messages in the chat.
+ * It interacts with the global state to add new messages and scrolls to the latest message
+ * after a message is sent.
+ */
+
 import React, { useState } from "react";
 import { View, TextInput, Button, StyleSheet } from "react-native";
 import useChatStore from "../store/useChatStore";
-import { chatStyles } from "../styles/chatScreenStyles"; // Importa los estilos globales
-import { FlatList } from "react-native"; // Importa FlatList para el tipo de referencia
+import { chatStyles } from "../styles/chatScreenStyles"; // Global styles
+import { FlatList } from "react-native"; // Reference type for FlatList
 
 type ChatInputProps = {
-  flatListRef: React.RefObject<FlatList>; // Tipo correcto para la referencia de FlatList
+  flatListRef: React.RefObject<FlatList>; // Reference to the FlatList for scrolling
 };
 
 const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
-  const [inputText, setInputText] = useState<string>(""); // Estado local para el texto de entrada
-  const addMessage = useChatStore((state) => state.addMessage); // Función para agregar mensajes
+  const [inputText, setInputText] = useState<string>(""); // Local state for the input text
+  const addMessage = useChatStore((state) => state.addMessage); // Function to add a new message to the global state
 
-  // Maneja el envío del mensaje
+  /**
+   * Handles sending a message.
+   * Clears the input field and scrolls to the latest message.
+   */
   const handleSendMessage = () => {
     if (inputText.trim()) {
-      addMessage(inputText); // Agrega el mensaje al estado global
-      setInputText(""); // Limpia el campo de entrada
+      addMessage(inputText); // Add the message to the global state
+      setInputText(""); // Clear the input field
 
-      // Desplázate al último mensaje
+      // Scroll to the last message
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -40,14 +51,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    backgroundColor: "#f9f9f9", // Fondo claro para mayor visibilidad
-    borderRadius: 10, // Bordes redondeados
+    backgroundColor: "#f9f9f9", // Light background for better visibility
+    borderRadius: 10, // Rounded corners
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   input: {
-    fontSize: 16, // Asegura que el texto sea legible
-    color: "#333", // Color de texto
+    fontSize: 16, // Ensure the text is legible
+    color: "#333", // Text color
   },
 });
 

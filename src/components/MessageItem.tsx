@@ -1,23 +1,41 @@
+/**
+ * MessageItem Component
+ * ---------------------
+ * This component is responsible for rendering individual chat messages.
+ * It displays the author's details, message content, any attached images,
+ * reactions, and a timestamp.
+ *
+ * Props:
+ * - message: The message object containing the text, attachments, and reactions.
+ * - onOpenParticipantModal: Function to open a modal with participant details.
+ * - onOpenImagePreview: Function to open the image preview modal with attachments.
+ */
+
 import React from "react";
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { chatStyles } from "../styles/chatScreenStyles";
 import useChatStore from "../store/useChatStore";
-import { Message, Participant, Reaction } from "../types/chatTypes"; // Asegúrate de importar los tipos correctos
+import { Attachment, Message, Participant, Reaction } from "../types/chatTypes";
 
-// Define las props del componente
 type MessageItemProps = {
-  message: Message; // Tipo del mensaje
-  onOpenParticipantModal: (participant: Participant) => void; // Función para abrir el modal
+  message: Message;
+  onOpenParticipantModal: (participant: Participant) => void;
+  onOpenImagePreview: (attachments: Attachment[], index: number) => void;
 };
 
 const MessageItem: React.FC<MessageItemProps> = ({
   message,
   onOpenParticipantModal,
+  onOpenImagePreview,
 }) => {
-  const participants = useChatStore((state) => state.participants); // Obtiene los participantes del store
-  const author = participants[message.authorUuid] || { name: "Unknown" }; // Obtiene el autor del mensaje
+  const participants = useChatStore((state) => state.participants);
+  const author = participants[message.authorUuid] || { name: "Unknown" };
 
-  // Función para contar reacciones únicas
+  /**
+   * Counts the occurrences of a specific reaction.
+   * @param reactionValue - The emoji or reaction value.
+   * @returns Number of occurrences for the specified reaction.
+   */
   const countReactions = (reactionValue: string) => {
     return (
       message.reactions?.filter(
@@ -28,10 +46,10 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   return (
     <View style={chatStyles.messageItem}>
-      {/* Información del autor */}
+      {/* Author information */}
       <TouchableOpacity
         style={chatStyles.authorContainer}
-        onPress={() => onOpenParticipantModal(author)} // Abre el modal con el participante
+        onPress={() => onOpenParticipantModal(author)}
       >
         {author.avatarUrl && (
           <Image source={{ uri: author.avatarUrl }} style={chatStyles.avatar} />
@@ -39,13 +57,33 @@ const MessageItem: React.FC<MessageItemProps> = ({
         <Text style={chatStyles.authorName}>{author.name}</Text>
       </TouchableOpacity>
 
-      {/* Contenido del mensaje */}
+      {/* Message content */}
       <Text style={chatStyles.messageText}>{message.text}</Text>
 
-      {/* Reacciones */}
+      {/* Attachments */}
+      {message.attachments?.length > 0 && (
+        <View style={chatStyles.attachmentsContainer}>
+          {message.attachments.map((attachment, index) =>
+            attachment.type === "image" ? (
+              <TouchableOpacity
+                key={attachment.uuid}
+                onPress={() =>
+                  onOpenImagePreview(message.attachments || [], index)
+                }
+              >
+                <Image
+                  source={{ uri: attachment.url }}
+                  style={chatStyles.attachmentImage}
+                />
+              </TouchableOpacity>
+            ) : null
+          )}
+        </View>
+      )}
+
+      {/* Reactions */}
       {message.reactions && message.reactions.length > 0 && (
         <View style={chatStyles.reactionsContainer}>
-          {/* Agrupa las reacciones por valor */}
           {Array.from(
             new Set(message.reactions.map((reaction) => reaction.value))
           ).map((reactionValue, index) => (
