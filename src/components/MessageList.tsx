@@ -35,12 +35,14 @@ const MessageList: React.FC<MessageListProps> = ({
 }) => {
   const [currentDate, setCurrentDate] = useState<string>(""); // State to track the visible date
 
-  // Group messages by date with "Today" and "Yesterday" labels
-  const groupMessagesByDate = (messages: Message[]) => {
+  // Group messages by date with "Today" and "Yesterday" labels and by author
+  const groupMessages = (messages: Message[]) => {
     const grouped: Array<
-      { type: "date"; date: string } | { type: "message"; message: Message }
+      | { type: "date"; date: string }
+      | { type: "message"; message: Message; isGrouped: boolean }
     > = [];
     let lastDate: string | null = null;
+    let lastAuthorUuid: string | null = null; // Track the last author's UUID
 
     messages.forEach((message) => {
       const messageDate = new Date(message.sentAt);
@@ -56,14 +58,20 @@ const MessageList: React.FC<MessageListProps> = ({
         displayDate = "Yesterday";
       }
 
+      // Add date separators
       if (displayDate !== lastDate) {
         grouped.push({ type: "date", date: displayDate });
         lastDate = displayDate;
+        lastAuthorUuid = null; // Reset author grouping on date change
       }
 
-      grouped.push({ type: "message", message });
-    });
+      // Check if the current message is from the same author as the previous message
+      const isGrouped = message.authorUuid === lastAuthorUuid;
+      grouped.push({ type: "message", message, isGrouped });
 
+      // Update the last author UUID
+      lastAuthorUuid = message.authorUuid;
+    });
     return grouped;
   };
 
@@ -79,7 +87,7 @@ const MessageList: React.FC<MessageListProps> = ({
     }
   };
 
-  const groupedMessages = groupMessagesByDate(messages);
+  const groupedMessages = groupMessages(messages);
 
   return (
     <View style={{ flex: 1 }}>
@@ -95,16 +103,17 @@ const MessageList: React.FC<MessageListProps> = ({
           item.type === "message" ? item.message.uuid : `date-${index}`
         }
         renderItem={({ item }) =>
-          item.type === "date" ? (
-            <View style={chatStyles.dateSeparator}>
-              <Text style={chatStyles.dateText}>{item.date}</Text>
-            </View>
-          ) : (
+          item.type === "message" ? (
             <MessageItem
               message={item.message}
               onOpenParticipantModal={onOpenParticipantModal}
-              onOpenImagePreview={onOpenImagePreview} // Pass the function to MessageItem
+              onOpenImagePreview={onOpenImagePreview}
+              isGrouped={item.isGrouped ?? false} // Ensure isGrouped is always defined
             />
+          ) : (
+            <View style={chatStyles.dateSeparator}>
+              <Text style={chatStyles.dateText}>{item.date}</Text>
+            </View>
           )
         }
         onViewableItemsChanged={handleViewableItemsChanged} // Detect visible items

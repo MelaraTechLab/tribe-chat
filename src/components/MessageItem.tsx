@@ -23,12 +23,14 @@ type MessageItemProps = {
   message: Message;
   onOpenParticipantModal: (participant: Participant) => void;
   onOpenImagePreview: (attachments: Attachment[], index: number) => void;
+  isGrouped: boolean;
 };
 
 const MessageItem: React.FC<MessageItemProps> = ({
   message,
   onOpenParticipantModal,
   onOpenImagePreview,
+  isGrouped = false,
 }) => {
   const participants = useChatStore((state) => state.participants);
   const author = participants[message.authorUuid] || { name: "Unknown" };
@@ -60,17 +62,27 @@ const MessageItem: React.FC<MessageItemProps> = ({
   }, [message.authorUuid, participants, refreshUsers]);
 
   return (
-    <View style={chatStyles.messageItem}>
-      {/* Author information */}
-      <TouchableOpacity
-        style={chatStyles.authorContainer}
-        onPress={() => onOpenParticipantModal(author)}
-      >
-        {author.avatarUrl && (
-          <Image source={{ uri: author.avatarUrl }} style={chatStyles.avatar} />
-        )}
-        <Text style={chatStyles.authorName}>{author.name}</Text>
-      </TouchableOpacity>
+    <View
+      style={[
+        chatStyles.messageItem,
+        isGrouped && chatStyles.groupedMessageItem, // Apply grouped styles if needed
+      ]}
+    >
+      {/* Author information (only show if not grouped) */}
+      {!isGrouped && (
+        <TouchableOpacity
+          style={chatStyles.authorContainer}
+          onPress={() => onOpenParticipantModal(author)}
+        >
+          {author.avatarUrl && (
+            <Image
+              source={{ uri: author.avatarUrl }}
+              style={chatStyles.avatar}
+            />
+          )}
+          <Text style={chatStyles.authorName}>{author.name}</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Message content */}
       <Text style={chatStyles.messageText}>

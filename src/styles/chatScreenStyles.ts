@@ -346,7 +346,12 @@ export const chatStyles = StyleSheet.create({
     fontSize: 12,
     color: "#888", 
   },
-  
+  groupedMessage: {
+    marginTop: 2, // Reduce the margin for grouped messages
+  },
+  groupedMessageItem: {
+    marginTop: 2, // Reduce spacing between grouped messages
+  },
   
   
 });
