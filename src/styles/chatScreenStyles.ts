@@ -70,11 +70,15 @@ export const chatStyles = StyleSheet.create({
   },
   // Container for the message input
   inputContainer: {
-    flexDirection: "row",
+    // flexDirection: "row",
     alignItems: "center",
     borderTopWidth: 1,
     borderColor: "#ccc",
     padding: 10,
+    borderRadius: 10,
+    marginHorizontal: 10,
+    marginBottom: 10,
+    flexDirection: "column",
   },
   // Text input field for messages
   input: {
@@ -84,6 +88,7 @@ export const chatStyles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     marginRight: 10,
+    fontSize: 16,
   },
   // Container for the message author details
   authorContainer: {
@@ -221,4 +226,66 @@ export const chatStyles = StyleSheet.create({
     marginTop: 20,
     width: "100%",
   },
+  replyingToContainer: {
+    marginBottom: 5,
+    padding: 5,
+    backgroundColor: "#e6e6e6",
+    borderRadius: 5,
+    alignSelf: "stretch",
+  },
+  replyingToLabel: {
+    fontWeight: "bold",
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  replyingToText: {
+    fontSize: 14,
+    color: "#555",
+  },
+  cancelReply: {
+    backgroundColor: "red",
+  color: "white",
+  fontSize: 12,
+  borderRadius: 3,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  alignSelf: "flex-end",
+  marginTop: 5,
+  },
+  replyButton: {
+    marginTop: 5,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#e6f7ff",
+    borderRadius: 5,
+  },
+  replyButtonText: {
+    fontSize: 12,
+    color: "#007aff",
+  },
+  quotedMessageContainer: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 5,
+    padding: 8,
+    marginBottom: 8,
+    maxWidth: "100%",
+  },
+  quotedMessageLabel: {
+    fontWeight: "bold",
+    fontSize: 12,
+    color: "#555",
+    marginBottom: 2,
+  },
+  quotedMessageText: {
+    fontSize: 14,
+    color: "#333",
+    flexShrink: 1,
+    flexWrap: "wrap",
+  },
+  textInputRow: {
+    flexDirection: "row", 
+    alignItems: "center",
+  },
+  
 });

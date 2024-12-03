@@ -60,6 +60,19 @@ const MessageItem: React.FC<MessageItemProps> = ({
       {/* Message content */}
       <Text style={chatStyles.messageText}>{message.text}</Text>
 
+      {/* Quoted message (if replying to another message) */}
+      {message.replyToMessageUuid && (
+        <View style={chatStyles.quotedMessageContainer}>
+          <Text style={chatStyles.quotedMessageLabel}>Replying to:</Text>
+          <Text style={chatStyles.quotedMessageText}>
+            {useChatStore
+              .getState()
+              .messages.find((msg) => msg.uuid === message.replyToMessageUuid)
+              ?.text || "Original message not found"}
+          </Text>
+        </View>
+      )}
+
       {/* Attachments */}
       {message.attachments?.length > 0 && (
         <View style={chatStyles.attachmentsContainer}>
@@ -96,6 +109,14 @@ const MessageItem: React.FC<MessageItemProps> = ({
           ))}
         </View>
       )}
+
+      {/* Reply action */}
+      <TouchableOpacity
+        style={chatStyles.replyButton}
+        onPress={() => useChatStore.getState().setReplyingTo(message.uuid)}
+      >
+        <Text style={chatStyles.replyButtonText}>Reply</Text>
+      </TouchableOpacity>
 
       {/* Timestamp */}
       <Text style={chatStyles.timestamp}>
