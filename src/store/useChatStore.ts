@@ -66,6 +66,7 @@ interface ChatState {
   fetchParticipants: () => Promise<void>; // Async function to fetch and store participants
   editMessage: (id: string, newText: string) => void; // Function to edit an existing message
   refreshUsers: () => Promise<void>;
+  addReactionToMessage: (messageUuid: string, emoji: string) => void;
 }
 
 // Zustand store with persistence to manage chat messages
@@ -131,6 +132,59 @@ const useChatStore = create<ChatState>()(
         }
       },
 
+      /**
+     * Simulates adding or updating a reaction. 
+     * This logic is temporary and assumes the backend will handle reactions properly in the future.
+     */
+      // Function to add or update a reaction for a message
+      addReactionToMessage: (messageUuid: string, emoji: string): void => {
+        set((state) => ({
+          messages: state.messages.map((msg) => {
+            if (msg.uuid === messageUuid) {
+              // Check if the user has already reacted with the same emoji
+              const existingUserReaction = msg.reactions?.find(
+                (reaction) => reaction.value === emoji && reaction.participantUuid === "you"
+              );
+      
+              if (existingUserReaction) {
+                // If the user already reacted with this emoji, do nothing
+                console.warn("You have already reacted with this emoji.");
+                return msg; // Return the message unchanged
+              }
+      
+              // Find the reaction for the emoji (any user)
+              const existingReaction = msg.reactions?.find((reaction) => reaction.value === emoji);
+      
+              if (existingReaction) {
+                // Increment the count of the existing reaction
+                return {
+                  ...msg,
+                  reactions: msg.reactions?.map((reaction) =>
+                    reaction.value === emoji
+                      ? {
+                          ...reaction,
+                          count: (reaction.count || 1) + 1,
+                          participantUuid: "you", // Mark the reaction as yours
+                        }
+                      : reaction
+                  ),
+                };
+              } else {
+                // Add a new reaction if it does not exist
+                return {
+                  ...msg,
+                  reactions: [
+                    ...(msg.reactions || []),
+                    { uuid: Date.now().toString(), value: emoji, participantUuid: "you", count: 1 },
+                  ],
+                };
+              }
+            }
+            return msg;
+          }),
+        }));
+      },
+      
       // Function to load participants from the API and update the store
       fetchParticipants: async (): Promise<void> => {
         try {

@@ -17,6 +17,7 @@ import { chatStyles } from "../styles/chatScreenStyles";
 import useChatStore from "../store/useChatStore";
 import { Attachment, Message, Participant, Reaction } from "../types/chatTypes";
 import { useEffect, useState } from "react";
+import ReactionSelectorModal from "./ReactionSelectorModal";
 
 type MessageItemProps = {
   message: Message;
@@ -32,6 +33,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const participants = useChatStore((state) => state.participants);
   const author = participants[message.authorUuid] || { name: "Unknown" };
   const refreshUsers = useChatStore((state) => state.refreshUsers);
+  const [isModalVisible, setModalVisible] = useState(false);
 
   /**
    * Counts the occurrences of a specific reaction.
@@ -40,9 +42,9 @@ const MessageItem: React.FC<MessageItemProps> = ({
    */
   const countReactions = (reactionValue: string) => {
     return (
-      message.reactions?.filter(
-        (reaction: Reaction) => reaction.value === reactionValue
-      ).length || 0
+      message.reactions
+        ?.filter((reaction: Reaction) => reaction.value === reactionValue)
+        .reduce((acc, reaction) => acc + (reaction.count || 1), 0) || 0
     );
   };
 
@@ -113,15 +115,40 @@ const MessageItem: React.FC<MessageItemProps> = ({
           {Array.from(
             new Set(message.reactions.map((reaction) => reaction.value))
           ).map((reactionValue, index) => (
-            <View key={index} style={chatStyles.reactionItem}>
+            <TouchableOpacity
+              key={index}
+              style={chatStyles.reactionItem}
+              onPress={() =>
+                useChatStore
+                  .getState()
+                  .addReactionToMessage(message.uuid, reactionValue)
+              }
+            >
               <Text style={chatStyles.reactionEmoji}>{reactionValue}</Text>
               <Text style={chatStyles.reactionCount}>
                 {countReactions(reactionValue)}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))}
+
+          {/* Button to add new reaction */}
+          <TouchableOpacity
+            style={chatStyles.addReactionButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={chatStyles.addReactionText}>+</Text>
+          </TouchableOpacity>
         </View>
       )}
+
+      {/* Reaction Selector Modal */}
+      <ReactionSelectorModal
+        isVisible={isModalVisible}
+        onClose={() => setModalVisible(false)}
+        onSelectReaction={(reaction) =>
+          useChatStore.getState().addReactionToMessage(message.uuid, reaction)
+        }
+      />
 
       {/* Reply action */}
       <TouchableOpacity

@@ -287,5 +287,47 @@ export const chatStyles = StyleSheet.create({
     flexDirection: "row", 
     alignItems: "center",
   },
+  addReactionButton: {
+    padding: 5,
+    borderRadius: 15,
+    backgroundColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 5,
+  },
+  addReactionText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  reactionsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  reactionOption: {
+    padding: 10,
+    margin: 5,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 10,
+  },
   
 });
