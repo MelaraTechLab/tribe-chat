@@ -13,7 +13,7 @@
  * - onOpenImagePreview: Function to handle previewing images in a modal.
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { FlatList, View, Text } from "react-native";
 import MessageItem from "./MessageItem";
 import { chatStyles } from "../styles/chatScreenStyles";
@@ -33,6 +33,8 @@ const MessageList: React.FC<MessageListProps> = ({
   onOpenParticipantModal,
   onOpenImagePreview,
 }) => {
+  const [currentDate, setCurrentDate] = useState<string>(""); // State to track the visible date
+
   // Group messages by date with "Today" and "Yesterday" labels
   const groupMessagesByDate = (messages: Message[]) => {
     const grouped: Array<
@@ -65,30 +67,51 @@ const MessageList: React.FC<MessageListProps> = ({
     return grouped;
   };
 
+  // Function to track visible items and update the current date
+  const handleViewableItemsChanged = ({
+    viewableItems,
+  }: {
+    viewableItems: Array<{ item: { type: string; date?: string } }>;
+  }) => {
+    const visibleDate = viewableItems.find((item) => item.item.type === "date");
+    if (visibleDate && visibleDate.item.date !== currentDate) {
+      setCurrentDate(visibleDate.item.date!); // Update the visible date
+    }
+  };
+
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
-    <FlatList
-      ref={flatListRef}
-      data={groupedMessages}
-      keyExtractor={(item, index) =>
-        item.type === "message" ? item.message.uuid : `date-${index}`
-      }
-      renderItem={({ item }) =>
-        item.type === "date" ? (
-          <View style={chatStyles.dateSeparator}>
-            <Text style={chatStyles.dateText}>{item.date}</Text>
-          </View>
-        ) : (
-          <MessageItem
-            message={item.message}
-            onOpenParticipantModal={onOpenParticipantModal}
-            onOpenImagePreview={onOpenImagePreview} // Pass the function to MessageItem
-          />
-        )
-      }
-      style={chatStyles.messageList}
-    />
+    <View style={{ flex: 1 }}>
+      {/* Static header for the date */}
+      <View style={chatStyles.staticDateHeader}>
+        <Text style={chatStyles.staticDateText}>{currentDate}</Text>
+      </View>
+
+      <FlatList
+        ref={flatListRef}
+        data={groupedMessages}
+        keyExtractor={(item, index) =>
+          item.type === "message" ? item.message.uuid : `date-${index}`
+        }
+        renderItem={({ item }) =>
+          item.type === "date" ? (
+            <View style={chatStyles.dateSeparator}>
+              <Text style={chatStyles.dateText}>{item.date}</Text>
+            </View>
+          ) : (
+            <MessageItem
+              message={item.message}
+              onOpenParticipantModal={onOpenParticipantModal}
+              onOpenImagePreview={onOpenImagePreview} // Pass the function to MessageItem
+            />
+          )
+        }
+        onViewableItemsChanged={handleViewableItemsChanged} // Detect visible items
+        viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+        style={chatStyles.messageList}
+      />
+    </View>
   );
 };
 

@@ -329,5 +329,19 @@ export const chatStyles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
     borderRadius: 10,
   },
+  staticDateHeader: {
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5", // Optional: customize the background
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  staticDateText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  
   
 });
