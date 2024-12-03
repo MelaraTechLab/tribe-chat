@@ -8,30 +8,43 @@ import {
   View,
 } from "react-native";
 import useChatStore from "../store/useChatStore";
+import { addReaction } from "../api/chatApi";
 
-// Define the Message type
+// Define the Reaction type
 type Reaction = {
   uuid: string; // Unique identifier for the reaction
   value: string; // Emoji representing the reaction
   participantUuid: string; // UUID of the user who reacted
 };
 
+// Define the Message type
 type Message = {
-  sentAt: number; // Timestamp indicating when the message was sent
+  authorUuid: string | undefined; // UUID of the author (optional)
+  attachments: string[] | undefined; // Attachments (optional)
+  sentAt: number; // Timestamp when the message was sent
   text: string; // Message content
   uuid: string; // Unique identifier for the message
   reactions?: Reaction[]; // Optional: Array of reactions
 };
 
 export const ChatScreen = () => {
+  // Zustand store hooks to manage global state
   const { messages, loadMessages, addMessage } = useChatStore();
-  const [inputText, setInputText] = useState("");
-  const flatListRef = useRef<FlatList>(null); // Reference for the FlatList
+  const [inputText, setInputText] = useState(""); // Local state for message input
+  const flatListRef = useRef<FlatList>(null); // Reference for FlatList to enable scrolling
 
   // Load messages from the store when the component mounts
   useEffect(() => {
     loadMessages();
   }, []);
+
+  // Ensure participants are loaded into the store
+  const ensureParticipantsLoaded = async () => {
+    const participants = useChatStore.getState().participants;
+    if (Object.keys(participants).length === 0) {
+      await useChatStore.getState().fetchParticipants(); // Fetch participants if none are loaded
+    }
+  };
 
   // Handle sending a new message
   const handleSendMessage = () => {
@@ -46,7 +59,16 @@ export const ChatScreen = () => {
     }
   };
 
-  // Group messages by date
+  // Handle adding a reaction to a message
+  const handleAddReaction = async (messageUuid: string, reaction: string) => {
+    try {
+      await addReaction(messageUuid, reaction); // Call API to add reaction
+    } catch (error) {
+      console.error("Error adding reaction:", error);
+    }
+  };
+
+  // Group messages by date for rendering
   const groupMessagesByDate = (messages: Message[]) => {
     const grouped: Array<
       | { type: "date"; date: string }
@@ -56,6 +78,8 @@ export const ChatScreen = () => {
           text: string;
           uuid: string;
           reactions?: Reaction[];
+          authorUuid?: string;
+          attachments?: string[];
         }
     > = [];
     let lastDate: string | null = null;
@@ -85,14 +109,23 @@ export const ChatScreen = () => {
         text: message.text,
         sentAt: message.sentAt,
         reactions: message.reactions,
+        authorUuid: message.authorUuid,
+        attachments: message.attachments,
       });
     });
 
     return grouped;
   };
 
-  // Group messages for rendering
-  const groupedMessages = groupMessagesByDate(messages);
+  const groupedMessages = groupMessagesByDate(messages as Message[]);
+
+  // Ensure participants are loaded on mount
+  useEffect(() => {
+    const initializeParticipants = async () => {
+      await ensureParticipantsLoaded();
+    };
+    initializeParticipants();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -108,9 +141,20 @@ export const ChatScreen = () => {
               </View>
             );
           }
-          // Render an individual message with reactions
+
+          // Get participants from the store
+          const participants = useChatStore.getState().participants;
+
+          // Get author details from the participants list
+          const authorId = item.authorUuid || "Unknown Author";
+          const author = participants[authorId];
+
+          // Render a message with the author's name
           return (
             <View style={styles.messageItem}>
+              <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
+                {author ? author.name : "Author not found"}
+              </Text>
               <Text style={styles.messageText}>{item.text}</Text>
               <Text style={styles.timestamp}>
                 {new Date(item.sentAt).toLocaleTimeString()}
@@ -119,18 +163,11 @@ export const ChatScreen = () => {
               {/* Render reactions */}
               {item.reactions && item.reactions.length > 0 && (
                 <View style={styles.reactionsContainer}>
-                  {item.reactions &&
-                    item.reactions.map((reaction: Reaction) => (
-                      <View key={reaction.uuid} style={styles.reactionItem}>
-                        <Text style={styles.reactionEmoji}>
-                          {reaction.value}
-                        </Text>
-                        <Text style={styles.reactionCount}>
-                          {/* Display count or default to "1" if only one participant */}
-                          {reaction.participantUuid ? "1" : ""}
-                        </Text>
-                      </View>
-                    ))}
+                  {item.reactions.map((reaction: Reaction) => (
+                    <View key={reaction.uuid} style={styles.reactionItem}>
+                      <Text style={styles.reactionEmoji}>{reaction.value}</Text>
+                    </View>
+                  ))}
                 </View>
               )}
             </View>
@@ -138,15 +175,16 @@ export const ChatScreen = () => {
         }}
         keyExtractor={(item, index) => {
           if (item.type === "message") {
-            return item.uuid; // Unique key for messages
+            return item.uuid;
           } else if (item.type === "date") {
-            return `date-${index}`; // Unique key for dates
+            return `date-${index}`;
           }
-          return `fallback-${index}`; // Fallback key
+          return `fallback-${index}`;
         }}
         style={styles.messageList}
       />
 
+      {/* Message Input */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -204,10 +242,6 @@ const styles = StyleSheet.create({
   reactionEmoji: {
     fontSize: 16,
     marginRight: 4,
-  },
-  reactionCount: {
-    fontSize: 12,
-    color: "#888",
   },
   inputContainer: {
     flexDirection: "row",

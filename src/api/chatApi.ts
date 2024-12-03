@@ -8,6 +8,20 @@ export const fetchAllMessages = async () => {
   return response.json();
 };
 
+export const fetchParticipants = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/participants/all`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch participants');
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching participants:', error);
+    throw error;
+  }
+};
+
 export const fetchLatestMessages = async () => {
   const response = await fetch(`${API_BASE}/messages/latest`);
   if (!response.ok) {

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { persist, PersistStorage } from 'zustand/middleware';
-import { fetchAllMessages, sendMessage } from '../api/chatApi';
+import { fetchAllMessages, sendMessage, fetchParticipants } from '../api/chatApi';
 
 // Custom AsyncStorage wrapper for Zustand to ensure async persistence
 const asyncStorage: PersistStorage<any> = {
@@ -35,11 +35,25 @@ interface Message {
   attachments?: string[]; // Optional: Attachments for the message
 }
 
+// Interface for a participant object
+interface Participant {
+  id: string; // UUID del participante
+  name: string; // Nombre del participante
+  bio: string; // Breve descripción del participante
+  email: string; // Email del participante
+  jobTitle: string; // Título del trabajo del participante
+  avatarUrl: string; // URL del avatar del participante
+  createdAt: number; // Fecha de creación (timestamp)
+  updatedAt: number; // Fecha de última actualización (timestamp)
+}
+
 // Interface defining the chat store state
 interface ChatState {
   messages: Message[];
+  participants: Record<string, Participant>; // Map of participants by their IDs
   addMessage: (text: string) => Promise<void>; // Async function to send and add a new message
   loadMessages: () => Promise<void>; // Async function to fetch and load all messages
+  fetchParticipants: () => Promise<void>; // Async function to fetch and store participants
   editMessage: (id: string, newText: string) => void; // Function to edit an existing message
 }
 
@@ -48,12 +62,13 @@ const useChatStore = create<ChatState>()(
   persist(
     (set) => ({
       messages: [],
+      participants: {},
 
       // Function to add a new message by sending it to the API and updating the store
       addMessage: async (text: string): Promise<void> => {
         try {
           const newMessageFromApi = await sendMessage(text);
-      
+
           // Transform API response into the expected message format
           const newMessage: Message = {
             uuid: newMessageFromApi.id,
@@ -63,7 +78,7 @@ const useChatStore = create<ChatState>()(
             authorUuid: newMessageFromApi.authorUuid, // Preserve author information
             attachments: newMessageFromApi.attachments || [], // Preserve attachments
           };
-      
+
           set((state) => ({
             messages: [...state.messages, newMessage], // Add the new message to the current state
           }));
@@ -80,7 +95,7 @@ const useChatStore = create<ChatState>()(
           // Transform API response into the expected format
           const messages: Message[] = messagesFromApi.map((msg: any) => ({
             uuid: msg.id || msg.uuid, // Use `id` or `uuid` as the unique identifier
-            text: msg.text || "No content", // Fallback if no text is provided
+            text: msg.text || 'No content', // Fallback if no text is provided
             sentAt: new Date(msg.createdAt || msg.sentAt).getTime(), // Convert date to timestamp
             reactions: msg.reactions || [], // Default to empty array if no reactions
             authorUuid: msg.authorUuid, // Preserve author information
@@ -88,9 +103,42 @@ const useChatStore = create<ChatState>()(
           }));
           set({ messages }); // Update the store with the transformed messages
         } catch (error) {
-          // console.error("Error loading messages:", error);
+          console.error('Error loading messages:', error);
         }
       },
+
+      // Function to load participants from the API and update the store
+      fetchParticipants: async (): Promise<void> => {
+        try {
+          console.log('fetchParticipants fue llamado'); // Imprime al inicio de la función
+          const participantsFromApi = await fetchParticipants();
+          console.log('Datos brutos de participantes desde la API:', participantsFromApi);
+      
+          // Transformar la lista de participantes en un mapa
+          const participants: Record<string, Participant> = participantsFromApi.reduce(
+            (acc: Record<string, Participant>, participant: any) => {
+              acc[participant.uuid] = {
+                id: participant.uuid,
+                name: participant.name,
+                bio: participant.bio,
+                email: participant.email,
+                jobTitle: participant.jobTitle,
+                avatarUrl: participant.avatarUrl,
+                createdAt: participant.createdAt,
+                updatedAt: participant.updatedAt,
+              };
+              return acc;
+            },
+            {}
+          );
+      
+          console.log('Participantes transformados para el estado:', participants);
+      
+          set({ participants });
+        } catch (error) {
+          console.error('Error al obtener participantes desde la API:', error);
+        }
+      },      
 
       // Function to edit an existing message by its ID
       editMessage: (id: string, newText: string): void => {
