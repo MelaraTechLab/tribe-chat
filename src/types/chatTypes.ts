@@ -25,6 +25,7 @@ export type Message = {
   authorUuid: string; // UUID of the message's author
   reactions?: Reaction[]; // Optional: Array of reactions to the message
   attachments?: Attachment[]; // Optional: Array of attachments (e.g., images)
+  replyToMessageUuid?: string; // New field for reply functionality
 };
 
 /**

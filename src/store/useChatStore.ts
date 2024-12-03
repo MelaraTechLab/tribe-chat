@@ -40,6 +40,7 @@ interface Message {
   reactions?: Reaction[]; // Optional: Array of reactions
   authorUuid?: string; // Optional: UUID of the author
   attachments?: string[]; // Optional: Attachments for the message
+  replyToMessageUuid?: string;
 }
 
 // Interface for a participant object
@@ -58,6 +59,8 @@ interface Participant {
 interface ChatState {
   messages: Message[];
   participants: Record<string, Participant>; // Map of participants by their IDs
+  replyingTo: string | null; // New state for tracking replies
+  setReplyingTo: (messageUuid: string | null) => void; // Action to set or clear reply
   addMessage: (text: string) => Promise<void>; // Async function to send and add a new message
   loadMessages: () => Promise<void>; // Async function to fetch and load all messages
   fetchParticipants: () => Promise<void>; // Async function to fetch and store participants
@@ -71,24 +74,37 @@ const useChatStore = create<ChatState>()(
       messages: [],
       participants: {},
 
+      replyingTo: null, // State to hold the message being replied to (if any)
+      setReplyingTo: (messageUuid: string | null) => {
+        set({ replyingTo: messageUuid }); // Update the reply state
+      },
+
       // Function to add a new message by sending it to the API and updating the store
       addMessage: async (text: string): Promise<void> => {
         try {
+          // Send the message to the API
           const newMessageFromApi = await sendMessage(text);
 
-          // Transform API response into the expected message format
-          const newMessage: Message = {
-            uuid: newMessageFromApi.id,
-            text: newMessageFromApi.text,
-            sentAt: new Date(newMessageFromApi.createdAt || Date.now()).getTime(), // Ensure sentAt is a timestamp
-            reactions: newMessageFromApi.reactions || [], // Default to empty array if no reactions
-            authorUuid: newMessageFromApi.authorUuid, // Preserve author information
-            attachments: newMessageFromApi.attachments || [], // Preserve attachments
-          };
+          // Update the state using 'set'
+          set((state) => {
+            const replyingTo = state.replyingTo; // Access the current reply target
 
-          set((state) => ({
-            messages: [...state.messages, newMessage], // Add the new message to the current state
-          }));
+            // Create the new message with `replyToMessageUuid` if `replyingTo` exists
+            const newMessage: Message = {
+              uuid: newMessageFromApi.id,
+              text: newMessageFromApi.text,
+              sentAt: new Date(newMessageFromApi.createdAt || Date.now()).getTime(), // Convert date to timestamp
+              reactions: newMessageFromApi.reactions || [], // Reactions (if any)
+              authorUuid: newMessageFromApi.authorUuid, // Author
+              attachments: newMessageFromApi.attachments || [], // Attachments
+              replyToMessageUuid: replyingTo || undefined, // Add `replyToMessageUuid` only if it exists
+            };
+
+            return {
+              messages: [...state.messages, newMessage], // Add the new message
+              replyingTo: null, // Clear the reply state after sending
+            };
+          });
         } catch (error) {
           console.error('Error adding message:', error);
         }
