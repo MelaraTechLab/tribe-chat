@@ -2,9 +2,12 @@ import React, { useEffect, useState, useRef } from "react";
 import {
   Button,
   FlatList,
+  Image,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import useChatStore from "../store/useChatStore";
@@ -32,6 +35,25 @@ export const ChatScreen = () => {
   const { messages, loadMessages, addMessage } = useChatStore();
   const [inputText, setInputText] = useState(""); // Local state for message input
   const flatListRef = useRef<FlatList>(null); // Reference for FlatList to enable scrolling
+
+  // Estado para el modal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] =
+    useState<Participant | null>(null);
+
+  // ...
+
+  // Función para manejar la apertura del modal
+  const handleOpenModal = (participant: Participant) => {
+    setSelectedParticipant(participant);
+    setModalVisible(true);
+  };
+
+  // Función para cerrar el modal
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedParticipant(null);
+  };
 
   // Load messages from the store when the component mounts
   useEffect(() => {
@@ -130,11 +152,10 @@ export const ChatScreen = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        ref={flatListRef} // Attach the ref to FlatList
+        ref={flatListRef}
         data={groupedMessages}
         renderItem={({ item }) => {
           if (item.type === "date") {
-            // Render a date separator
             return (
               <View style={styles.dateSeparator}>
                 <Text style={styles.dateText}>{item.date}</Text>
@@ -142,34 +163,55 @@ export const ChatScreen = () => {
             );
           }
 
-          // Get participants from the store
           const participants = useChatStore.getState().participants;
-
-          // Get author details from the participants list
           const authorId = item.authorUuid || "Unknown Author";
           const author = participants[authorId];
 
-          // Render a message with the author's name
           return (
             <View style={styles.messageItem}>
-              <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
-                {author ? author.name : "Author not found"}
-              </Text>
+              <TouchableOpacity
+                style={styles.authorContainer}
+                onPress={() => author && handleOpenModal(author)}
+              >
+                {author?.avatarUrl && (
+                  <Image
+                    source={{ uri: author.avatarUrl }}
+                    style={styles.avatar}
+                  />
+                )}
+                <Text style={styles.authorName}>
+                  {author ? author.name : "Author not found"}
+                </Text>
+              </TouchableOpacity>
               <Text style={styles.messageText}>{item.text}</Text>
-              <Text style={styles.timestamp}>
-                {new Date(item.sentAt).toLocaleTimeString()}
-              </Text>
-
               {/* Render reactions */}
               {item.reactions && item.reactions.length > 0 && (
                 <View style={styles.reactionsContainer}>
-                  {item.reactions.map((reaction: Reaction) => (
-                    <View key={reaction.uuid} style={styles.reactionItem}>
-                      <Text style={styles.reactionEmoji}>{reaction.value}</Text>
-                    </View>
-                  ))}
+                  {item.reactions.map(
+                    (
+                      reaction: Reaction,
+                      index: React.Key | null | undefined
+                    ) => (
+                      <View key={index} style={styles.reactionItem}>
+                        <Text style={styles.reactionEmoji}>
+                          {reaction.value}
+                        </Text>
+                        <Text style={styles.reactionCount}>
+                          {
+                            item.reactions.filter(
+                              (r: { value: string }) =>
+                                r.value === reaction.value
+                            ).length
+                          }
+                        </Text>
+                      </View>
+                    )
+                  )}
                 </View>
               )}
+              <Text style={styles.timestamp}>
+                {new Date(item.sentAt).toLocaleTimeString()}
+              </Text>
             </View>
           );
         }}
@@ -184,7 +226,38 @@ export const ChatScreen = () => {
         style={styles.messageList}
       />
 
-      {/* Message Input */}
+      {/* Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {selectedParticipant && (
+              <>
+                {selectedParticipant.avatarUrl && (
+                  <Image
+                    source={{ uri: selectedParticipant.avatarUrl }}
+                    style={styles.modalAvatar}
+                  />
+                )}
+                <Text style={styles.modalName}>{selectedParticipant.name}</Text>
+                <Text style={styles.modalBio}>{selectedParticipant.bio}</Text>
+                <Text style={styles.modalJob}>
+                  {selectedParticipant.jobTitle}
+                </Text>
+                <Text style={styles.modalEmail}>
+                  {selectedParticipant.email}
+                </Text>
+              </>
+            )}
+            <Button title="Close" onPress={handleCloseModal} />
+          </View>
+        </View>
+      </Modal>
+
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -257,6 +330,69 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     marginRight: 10,
+  },
+  authorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  authorName: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  modalJobTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+  reactionCount: {
+    fontSize: 14,
+    color: "#888",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Fondo semitransparente
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+    width: "80%",
+  },
+  modalAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
+  },
+  modalName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalBio: {
+    fontSize: 16,
+    fontStyle: "italic",
+    marginBottom: 10,
+  },
+  modalJob: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  modalEmail: {
+    fontSize: 14,
+    color: "blue",
+    textDecorationLine: "underline",
+    marginBottom: 15,
   },
 });
 
