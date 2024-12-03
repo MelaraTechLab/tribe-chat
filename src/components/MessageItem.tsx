@@ -16,6 +16,7 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import { chatStyles } from "../styles/chatScreenStyles";
 import useChatStore from "../store/useChatStore";
 import { Attachment, Message, Participant, Reaction } from "../types/chatTypes";
+import { useEffect, useState } from "react";
 
 type MessageItemProps = {
   message: Message;
@@ -30,6 +31,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 }) => {
   const participants = useChatStore((state) => state.participants);
   const author = participants[message.authorUuid] || { name: "Unknown" };
+  const refreshUsers = useChatStore((state) => state.refreshUsers);
 
   /**
    * Counts the occurrences of a specific reaction.
@@ -43,6 +45,17 @@ const MessageItem: React.FC<MessageItemProps> = ({
       ).length || 0
     );
   };
+
+  // State to track if the author is unknown
+  const [isUnknown, setIsUnknown] = useState(false);
+
+  // UseEffect to check for unknown participants and refresh the list if necessary
+  useEffect(() => {
+    if (message.authorUuid && !participants[message.authorUuid]) {
+      setIsUnknown(true); // Mark as unknown
+      refreshUsers(); // Trigger a refresh of the participants list
+    }
+  }, [message.authorUuid, participants, refreshUsers]);
 
   return (
     <View style={chatStyles.messageItem}>

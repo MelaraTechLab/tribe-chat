@@ -65,6 +65,7 @@ interface ChatState {
   loadMessages: () => Promise<void>; // Async function to fetch and load all messages
   fetchParticipants: () => Promise<void>; // Async function to fetch and store participants
   editMessage: (id: string, newText: string) => void; // Function to edit an existing message
+  refreshUsers: () => Promise<void>;
 }
 
 // Zustand store with persistence to manage chat messages
@@ -158,6 +159,41 @@ const useChatStore = create<ChatState>()(
           console.error('Error fetching participants from API:', error);
         }
       },
+
+      refreshUsers: async (): Promise<void> => {
+        try {
+          const participantsFromApi = await fetchParticipants();
+      
+          // Transform the list into a map of participants
+          const newParticipants: Record<string, Participant> = participantsFromApi.reduce(
+            (acc: Record<string, Participant>, participant: any) => {
+              acc[participant.uuid] = {
+                id: participant.uuid,
+                name: participant.name,
+                bio: participant.bio,
+                email: participant.email,
+                jobTitle: participant.jobTitle,
+                avatarUrl: participant.avatarUrl,
+                createdAt: participant.createdAt,
+                updatedAt: participant.updatedAt,
+              };
+              return acc;
+            },
+            {}
+          );
+      
+          // Update the global state, merging new participants with existing ones
+          set((state) => ({
+            participants: {
+              ...state.participants,
+              ...newParticipants,
+            },
+          }));
+        } catch (error) {
+          console.error('Error refreshing participants:', error);
+        }
+      },
+      
 
       // Function to edit an existing message by its ID
       editMessage: (id: string, newText: string): void => {
