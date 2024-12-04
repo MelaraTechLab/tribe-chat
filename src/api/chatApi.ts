@@ -56,3 +56,37 @@ export const addReaction = async (messageUuid: string, reaction: string) => {
 
   return response.json(); // Return the updated message
 };
+
+export const fetchOlderMessages = async (refMessageUuid: string) => {
+  const response = await fetch(`${API_BASE}/messages/older/${refMessageUuid}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch older messages from ${refMessageUuid}`);
+  }
+  return response.json();
+};
+
+export const fetchUpdatedMessages = async (sinceTimestamp: number) => {
+  const response = await fetch(`${API_BASE}/messages/updates/${sinceTimestamp}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch updated messages since ${sinceTimestamp}`);
+  }
+  return response.json();
+};
+
+export const fetchUpdatedParticipants = async (sinceTimestamp: number) => {
+  const response = await fetch(
+    `${API_BASE}/participants/updates/${sinceTimestamp}`
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to fetch updated participants since ${sinceTimestamp}`);
+  }
+  return response.json();
+};
+
+export const fetchSessionInfo = async () => {
+  const response = await fetch(`${API_BASE}/info`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch session info");
+  }
+  return response.json();
+};

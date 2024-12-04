@@ -19,7 +19,7 @@ import { Attachment, Participant } from "../types/chatTypes"; // Import necessar
 import ImagePreviewModal from "../components/ImagePreviewModal";
 
 const ChatScreen: React.FC = () => {
-  const { messages, loadMessages } = useChatStore(); // Load messages from the global store
+  const { messages, loadMessages, loadOlderMessages } = useChatStore(); // Load messages from the global store
   const [modalVisible, setModalVisible] = useState<boolean>(false); // State for participant modal visibility
   const [selectedParticipant, setSelectedParticipant] =
     useState<Participant | null>(null); // Selected participant details
@@ -47,6 +47,16 @@ const ChatScreen: React.FC = () => {
     loadMessages();
   }, []);
 
+  useEffect(() => {
+    // Load all messages on app initialization
+    const initializeMessages = async () => {
+      await useChatStore.getState().loadAllMessages();
+      await useChatStore.getState().loadMessages(); // Load latest messages after
+    };
+
+    initializeMessages();
+  }, []);
+
   // Opens the participant modal with selected participant details
   const handleOpenModal = (participant: Participant) => {
     setSelectedParticipant(participant);
@@ -67,6 +77,7 @@ const ChatScreen: React.FC = () => {
         flatListRef={flatListRef}
         onOpenParticipantModal={handleOpenModal} // Pass function to handle participant modal
         onOpenImagePreview={openImagePreview} // Pass function to handle image preview
+        loadOlderMessages={loadOlderMessages}
       />
       {/* Render the chat input bar */}
       <ChatInput flatListRef={flatListRef} />

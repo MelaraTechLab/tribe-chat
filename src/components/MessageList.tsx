@@ -25,6 +25,7 @@ type MessageListProps = {
   flatListRef: React.RefObject<FlatList>; // Reference to the FlatList
   onOpenParticipantModal: (participant: Participant) => void; // Function to open the participant modal
   onOpenImagePreview: (attachments: { url: string }[], index: number) => void; // Function to open image preview
+  loadOlderMessages: (lastMessageUuid: string) => void;
 };
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -32,6 +33,7 @@ const MessageList: React.FC<MessageListProps> = ({
   flatListRef,
   onOpenParticipantModal,
   onOpenImagePreview,
+  loadOlderMessages,
 }) => {
   const [currentDate, setCurrentDate] = useState<string>(""); // State to track the visible date
 
@@ -88,6 +90,7 @@ const MessageList: React.FC<MessageListProps> = ({
   };
 
   const groupedMessages = groupMessages(messages);
+  console.log("Grouped Messages:", groupedMessages);
 
   return (
     <View style={{ flex: 1 }}>
@@ -100,7 +103,9 @@ const MessageList: React.FC<MessageListProps> = ({
         ref={flatListRef}
         data={groupedMessages}
         keyExtractor={(item, index) =>
-          item.type === "message" ? item.message.uuid : `date-${index}`
+          item.type === "message"
+            ? `${item.message.uuid}-${index}`
+            : `date-${index}`
         }
         renderItem={({ item }) =>
           item.type === "message" ? (
@@ -116,7 +121,16 @@ const MessageList: React.FC<MessageListProps> = ({
             </View>
           )
         }
-        onViewableItemsChanged={handleViewableItemsChanged} // Detect visible items
+        // onEndReachedThreshold={0.5} // Trigger when halfway up the list
+        // onEndReached={() => {
+        //   // Obtén el mensaje más antiguo directamente desde `messages`
+        //   const oldestMessage = messages[messages.length - 1];
+        //   if (oldestMessage) {
+        //     loadOlderMessages(oldestMessage.uuid);
+        //   }
+        // }}
+        inverted // Invert the list to show newest messages at the bottom
+        onViewableItemsChanged={handleViewableItemsChanged} // Update the current date
         viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
         style={chatStyles.messageList}
       />
