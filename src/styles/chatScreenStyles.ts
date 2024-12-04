@@ -115,7 +115,7 @@ export const chatStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  modalContainer: {
+  modalContainerReaction: {
     width: "80%",
     backgroundColor: "#fff",
     borderRadius: 10,

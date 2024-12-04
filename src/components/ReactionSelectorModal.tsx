@@ -41,7 +41,7 @@ const ReactionSelectorModal: React.FC<ReactionSelectorModalProps> = ({
       onRequestClose={onClose} // Adds support for back button on Android
     >
       <View style={chatStyles.modalOverlay}>
-        <View style={chatStyles.modalContainer}>
+        <View style={chatStyles.modalContainerReaction}>
           {/* Modal Header */}
           <Text style={chatStyles.modalTitle}>Select a Reaction</Text>
 

@@ -109,8 +109,6 @@ const useChatStore = create<ChatState>()(
             // Add the new message at the beginning to match the expected order
             const updatedMessages = [newMessage, ...state.messages];
 
-            console.log("Updated messages:", updatedMessages); // Debugging
-
             return {
               messages: updatedMessages, // Update state with the new message
               replyingTo: null,
