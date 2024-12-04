@@ -79,14 +79,14 @@ const MessageItem: React.FC<MessageItemProps> = ({
     <View
       style={[
         chatStyles.messageItem,
-        isGrouped && chatStyles.groupedMessageItem, // Apply grouped styling
+        isGrouped && chatStyles.groupedMessageItem,
       ]}
     >
-      {/* Author's information (only shown if not grouped) */}
+      {/* Author's information (only if not grouped) */}
       {!isGrouped && (
         <TouchableOpacity
           style={chatStyles.authorContainer}
-          onPress={() => onOpenParticipantModal(adjustedAuthor)}
+          onPress={() => onOpenParticipantModal(author)}
         >
           {author.avatarUrl && (
             <Image
@@ -98,7 +98,15 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </TouchableOpacity>
       )}
 
-      {/* Message content with edited indicator */}
+      {/* Botón de Reply (superior derecha) */}
+      <TouchableOpacity
+        style={chatStyles.replyButton}
+        onPress={() => setReplyingTo(message.uuid)}
+      >
+        <Text style={chatStyles.replyButtonText}>Reply</Text>
+      </TouchableOpacity>
+
+      {/* Message content */}
       <Text style={chatStyles.messageText}>
         {message.text}
         {message.updatedAt && message.sentAt !== message.updatedAt && (
@@ -106,7 +114,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
         )}
       </Text>
 
-      {/* Quoted message (if replying to another message) */}
+      {/* Quoted message */}
       {message.replyToMessageUuid && (
         <View style={chatStyles.quotedMessageContainer}>
           <Text style={chatStyles.quotedMessageLabel}>Replying to:</Text>
@@ -138,7 +146,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </View>
       )}
 
-      {/* Reactions section */}
+      {/* Reactions */}
       {Array.isArray(message.reactions) && message.reactions.length > 0 && (
         <View style={chatStyles.reactionsContainer}>
           {Array.from(
@@ -170,16 +178,11 @@ const MessageItem: React.FC<MessageItemProps> = ({
       <ReactionSelectorModal
         isVisible={isModalVisible}
         onClose={() => setModalVisible(false)}
-        onSelectReaction={(reaction) => addReaction(message.uuid, reaction)}
+        onSelectReaction={(reaction) => {
+          setModalVisible(false);
+          addReaction(message.uuid, reaction);
+        }}
       />
-
-      {/* Reply button */}
-      <TouchableOpacity
-        style={chatStyles.replyButton}
-        onPress={() => setReplyingTo(message.uuid)}
-      >
-        <Text style={chatStyles.replyButtonText}>Reply</Text>
-      </TouchableOpacity>
 
       {/* Timestamp */}
       <Text style={chatStyles.timestamp}>

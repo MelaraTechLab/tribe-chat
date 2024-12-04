@@ -19,23 +19,6 @@ export const chatStyles = StyleSheet.create({
   messageList: {
     flex: 1,
   },
-  // Individual message container
-  messageItem: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: "#f1f1f1",
-    borderRadius: 5,
-  },
-  // Text content of the message
-  messageText: {
-    fontSize: 16,
-  },
-  // Timestamp of the message
-  timestamp: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 5,
-  },
   // Date separator in the message list
   dateSeparator: {
     marginVertical: 10,
@@ -46,27 +29,6 @@ export const chatStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#444",
-  },
-  // Container for reactions
-  reactionsContainer: {
-    flexDirection: "row",
-    marginTop: 5,
-  },
-  // Individual reaction container
-  reactionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  // Emoji for a reaction
-  reactionEmoji: {
-    fontSize: 16,
-    marginRight: 4,
-  },
-  // Count of reactions for a specific emoji
-  reactionCount: {
-    fontSize: 14,
-    color: "#888",
   },
   // Container for the message input
   inputContainer: {
@@ -88,24 +50,6 @@ export const chatStyles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     marginRight: 10,
-    fontSize: 16,
-  },
-  // Container for the message author details
-  authorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  // Avatar of the message author
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  // Name of the message author
-  authorName: {
-    fontWeight: "bold",
     fontSize: 16,
   },
   // Modal container with a semi-transparent background
@@ -178,20 +122,6 @@ export const chatStyles = StyleSheet.create({
     fontSize: 16,
     color: "#888",
   },
-  // Container for attachments in a message
-  attachmentsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 10,
-  },
-  // Style for individual attachment images
-  attachmentImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 5,
-    marginRight: 10,
-    marginBottom: 10,
-  },
   // Full-size image preview
   imagePreview: {
     width: "90%",
@@ -259,53 +189,9 @@ export const chatStyles = StyleSheet.create({
     alignSelf: "flex-end",
     marginTop: 5,
   },
-  replyButton: {
-    marginTop: 5,
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: "#e6f7ff",
-    borderRadius: 5,
-  },
-  replyButtonText: {
-    fontSize: 12,
-    color: "#007aff",
-  },
-  quotedMessageContainer: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 5,
-    padding: 8,
-    marginBottom: 8,
-    maxWidth: "100%",
-  },
-  quotedMessageLabel: {
-    fontWeight: "bold",
-    fontSize: 12,
-    color: "#555",
-    marginBottom: 2,
-  },
-  quotedMessageText: {
-    fontSize: 14,
-    color: "#333",
-    flexShrink: 1,
-    flexWrap: "wrap",
-  },
   textInputRow: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  addReactionButton: {
-    padding: 5,
-    borderRadius: 15,
-    backgroundColor: "#E0E0E0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 5,
-  },
-  addReactionText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#000",
   },
   modalOverlay: {
     flex: 1,
@@ -333,7 +219,7 @@ export const chatStyles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f5f5f5", // Optional: customize the background
+    backgroundColor: "#f5f5f5",
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },
@@ -342,28 +228,129 @@ export const chatStyles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  editedIndicator: {
-    fontSize: 12,
-    color: "#888",
-  },
   groupedMessage: {
-    marginTop: 2, // Reduce the margin for grouped messages
-  },
-  groupedMessageItem: {
-    marginTop: 2, // Reduce spacing between grouped messages
+    marginTop: 2,
   },
   navigationContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 10,
-    backgroundColor: "#000", // Fondo negro para destacar botones
+    backgroundColor: "#000",
   },
   navigationButton: {
-    color: "#fff", // Texto blanco para contraste
+    color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
     paddingHorizontal: 10,
     paddingVertical: 5,
+  },
+  messageItem: {
+    padding: 10,
+    marginVertical: 5,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    position: "relative",
+  },
+  groupedMessageItem: {
+    marginTop: 2,
+  },
+  authorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  authorName: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: "#333",
+  },
+  messageText: {
+    fontSize: 14,
+    color: "#000",
+  },
+  editedIndicator: {
+    fontSize: 12,
+    color: "#999",
+  },
+  quotedMessageContainer: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: "#e9e9e9",
+    borderRadius: 5,
+  },
+  quotedMessageLabel: {
+    fontWeight: "bold",
+    fontSize: 12,
+    color: "#555",
+  },
+  quotedMessageText: {
+    fontSize: 12,
+    color: "#333",
+  },
+  attachmentsContainer: {
+    marginTop: 10,
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  attachmentImage: {
+    width: 60,
+    height: 60,
+    margin: 5,
+    borderRadius: 5,
+  },
+  reactionsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  reactionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 8,
+    backgroundColor: "#f1f1f1",
+    padding: 5,
+    borderRadius: 5,
+  },
+  reactionEmoji: {
+    fontSize: 18,
+  },
+  reactionCount: {
+    fontSize: 14,
+    marginLeft: 5,
+    color: "#555",
+  },
+  addReactionButton: {
+    padding: 5,
+    backgroundColor: "#ddd",
+    borderRadius: 5,
+  },
+  addReactionText: {
+    fontSize: 16,
+    color: "#555",
+  },
+  replyButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "#007BFF",
+    padding: 5,
+    borderRadius: 5,
+  },
+  replyButtonText: {
+    color: "#fff",
+    fontSize: 12,
+  },
+  timestamp: {
+    marginTop: 8,
+    fontSize: 10,
+    color: "#777",
+    textAlign: "right",
   },
 });
