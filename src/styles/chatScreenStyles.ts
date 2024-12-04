@@ -115,6 +115,13 @@ export const chatStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
+  modalContainer: {
+    width: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+  },
   // Content inside the modal
   modalContent: {
     backgroundColor: "#fff",
@@ -244,13 +251,13 @@ export const chatStyles = StyleSheet.create({
   },
   cancelReply: {
     backgroundColor: "red",
-  color: "white",
-  fontSize: 12,
-  borderRadius: 3,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  alignSelf: "flex-end",
-  marginTop: 5,
+    color: "white",
+    fontSize: 12,
+    borderRadius: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: "flex-end",
+    marginTop: 5,
   },
   replyButton: {
     marginTop: 5,
@@ -284,33 +291,26 @@ export const chatStyles = StyleSheet.create({
     flexWrap: "wrap",
   },
   textInputRow: {
-    flexDirection: "row", 
+    flexDirection: "row",
     alignItems: "center",
   },
   addReactionButton: {
     padding: 5,
     borderRadius: 15,
-    backgroundColor: '#E0E0E0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#E0E0E0",
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 5,
   },
   addReactionText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
+    color: "#000",
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContainer: {
-    width: "80%",
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
     alignItems: "center",
   },
   modalTitle: {
@@ -344,7 +344,7 @@ export const chatStyles = StyleSheet.create({
   },
   editedIndicator: {
     fontSize: 12,
-    color: "#888", 
+    color: "#888",
   },
   groupedMessage: {
     marginTop: 2, // Reduce the margin for grouped messages
@@ -352,6 +352,18 @@ export const chatStyles = StyleSheet.create({
   groupedMessageItem: {
     marginTop: 2, // Reduce spacing between grouped messages
   },
-  
-  
+  navigationContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 10,
+    backgroundColor: "#000", // Fondo negro para destacar botones
+  },
+  navigationButton: {
+    color: "#fff", // Texto blanco para contraste
+    fontSize: 16,
+    fontWeight: "bold",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
 });

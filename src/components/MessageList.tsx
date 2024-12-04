@@ -1,16 +1,22 @@
 /**
  * MessageList.tsx
  *
- * Component that renders a list of messages grouped by date.
- * Includes functionality to display "Today" and "Yesterday" labels
- * for messages sent on those days. Each message is rendered using the
- * `MessageItem` component.
+ * Component responsible for rendering a scrollable list of chat messages grouped by date
+ * and participant. It also includes features to dynamically display "Today" and "Yesterday"
+ * labels for recent messages.
+ *
+ * Features:
+ * - Groups consecutive messages by the same author.
+ * - Displays date separators with "Today" and "Yesterday" labels when applicable.
+ * - Handles scrolling and dynamically updates the visible date.
+ * - Renders messages using the `MessageItem` component.
  *
  * Props:
- * - messages: List of messages to render.
- * - flatListRef: Reference to the FlatList for scrolling or programmatic control.
- * - onOpenParticipantModal: Function to handle opening a participant modal.
- * - onOpenImagePreview: Function to handle previewing images in a modal.
+ * - messages: Array of chat messages to render.
+ * - flatListRef: Reference to the FlatList for scrolling and programmatic control.
+ * - onOpenParticipantModal: Callback for opening a modal with participant details.
+ * - onOpenImagePreview: Callback for previewing attached images in a modal.
+ * - loadOlderMessages: Callback to load older messages when reaching the list's top.
  */
 
 import React, { useState } from "react";
@@ -19,13 +25,18 @@ import MessageItem from "./MessageItem";
 import { chatStyles } from "../styles/chatScreenStyles";
 import { Message, Participant } from "../types/chatTypes";
 
-// Define the props for the MessageList component
+// Define a union type for grouped messages
+type GroupedMessage =
+  | { type: "date"; date: string }
+  | { type: "message"; message: Message; isGrouped: boolean };
+
+// Define props for the MessageList component
 type MessageListProps = {
-  messages: Message[]; // List of messages
-  flatListRef: React.RefObject<FlatList>; // Reference to the FlatList
-  onOpenParticipantModal: (participant: Participant) => void; // Function to open the participant modal
-  onOpenImagePreview: (attachments: { url: string }[], index: number) => void; // Function to open image preview
-  loadOlderMessages: (lastMessageUuid: string) => void;
+  messages: Message[]; // List of chat messages
+  flatListRef: React.RefObject<FlatList>; // Reference to the FlatList for external control
+  onOpenParticipantModal: (participant: Participant) => void; // Handler for participant modals
+  onOpenImagePreview: (attachments: { url: string }[], index: number) => void; // Handler for image preview modals
+  loadOlderMessages: (lastMessageUuid: string) => void; // Function to fetch older messages
 };
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -35,16 +46,16 @@ const MessageList: React.FC<MessageListProps> = ({
   onOpenImagePreview,
   loadOlderMessages,
 }) => {
-  const [currentDate, setCurrentDate] = useState<string>(""); // State to track the visible date
+  const [currentDate, setCurrentDate] = useState<string>(""); // State for the currently visible date
 
-  // Group messages by date with "Today" and "Yesterday" labels and by author
-  const groupMessages = (messages: Message[]) => {
-    const grouped: Array<
-      | { type: "date"; date: string }
-      | { type: "message"; message: Message; isGrouped: boolean }
-    > = [];
+  /**
+   * Groups messages by date and participant.
+   * Consecutive messages from the same author are marked for grouping.
+   */
+  const groupMessages = (messages: Message[]): GroupedMessage[] => {
+    const grouped: GroupedMessage[] = [];
     let lastDate: string | null = null;
-    let lastAuthorUuid: string | null = null; // Track the last author's UUID
+    let lastAuthorUuid: string | null = null;
 
     messages.forEach((message) => {
       const messageDate = new Date(message.sentAt);
@@ -60,46 +71,54 @@ const MessageList: React.FC<MessageListProps> = ({
         displayDate = "Yesterday";
       }
 
-      // Add date separators
+      // Add a new date separator if the message's date differs from the last one
       if (displayDate !== lastDate) {
         grouped.push({ type: "date", date: displayDate });
         lastDate = displayDate;
-        lastAuthorUuid = null; // Reset author grouping on date change
+        lastAuthorUuid = null; // Reset grouping when the date changes
       }
 
-      // Check if the current message is from the same author as the previous message
+      // Mark messages as grouped if they're from the same author as the last message
       const isGrouped = message.authorUuid === lastAuthorUuid;
       grouped.push({ type: "message", message, isGrouped });
 
-      // Update the last author UUID
-      lastAuthorUuid = message.authorUuid;
+      lastAuthorUuid = message.authorUuid; // Update the last author's UUID
     });
+
     return grouped;
   };
 
-  // Function to track visible items and update the current date
+  /**
+   * Updates the currently visible date based on the list's visible items.
+   */
   const handleViewableItemsChanged = ({
     viewableItems,
   }: {
-    viewableItems: Array<{ item: { type: string; date?: string } }>;
+    viewableItems: Array<{ item: GroupedMessage }>;
   }) => {
-    const visibleDate = viewableItems.find((item) => item.item.type === "date");
-    if (visibleDate && visibleDate.item.date !== currentDate) {
-      setCurrentDate(visibleDate.item.date!); // Update the visible date
+    const visibleDate = viewableItems.find(
+      (item) => item.item.type === "date" // Check explicitly for "date" type
+    );
+
+    if (
+      visibleDate &&
+      visibleDate.item.type === "date" &&
+      visibleDate.item.date !== currentDate
+    ) {
+      setCurrentDate(visibleDate.item.date); // Access 'date' safely after type check
     }
   };
 
   const groupedMessages = groupMessages(messages);
-  console.log("Grouped Messages:", groupedMessages);
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Static header for the date */}
+      {/* Sticky header displaying the current visible date */}
       <View style={chatStyles.staticDateHeader}>
         <Text style={chatStyles.staticDateText}>{currentDate}</Text>
       </View>
 
-      <FlatList
+      <FlatList<GroupedMessage>
         ref={flatListRef}
         data={groupedMessages}
         keyExtractor={(item, index) =>
@@ -113,7 +132,7 @@ const MessageList: React.FC<MessageListProps> = ({
               message={item.message}
               onOpenParticipantModal={onOpenParticipantModal}
               onOpenImagePreview={onOpenImagePreview}
-              isGrouped={item.isGrouped ?? false} // Ensure isGrouped is always defined
+              isGrouped={item.isGrouped} // Always defined
             />
           ) : (
             <View style={chatStyles.dateSeparator}>
@@ -121,16 +140,8 @@ const MessageList: React.FC<MessageListProps> = ({
             </View>
           )
         }
-        // onEndReachedThreshold={0.5} // Trigger when halfway up the list
-        // onEndReached={() => {
-        //   // Obtén el mensaje más antiguo directamente desde `messages`
-        //   const oldestMessage = messages[messages.length - 1];
-        //   if (oldestMessage) {
-        //     loadOlderMessages(oldestMessage.uuid);
-        //   }
-        // }}
-        inverted // Invert the list to show newest messages at the bottom
-        onViewableItemsChanged={handleViewableItemsChanged} // Update the current date
+        inverted // Shows newest messages at the bottom
+        onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
         style={chatStyles.messageList}
       />

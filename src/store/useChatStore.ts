@@ -10,13 +10,12 @@ import {
 } from "../api/chatApi";
 
 /**
- * Chat Store
- * This file defines the Zustand store for managing chat data, including messages, participants,
- * and various operations such as sending, editing, and fetching data.
- * It also persists the state using AsyncStorage for continuity across sessions.
+ * Zustand Chat Store
+ * Manages the chat data, including messages, participants, and their interactions.
+ * Supports operations such as sending, editing, fetching, and persisting state with AsyncStorage.
  */
 
-// Custom AsyncStorage wrapper for Zustand to ensure async persistence
+// Custom AsyncStorage wrapper for Zustand
 const asyncStorage: PersistStorage<any> = {
   getItem: async (name) => {
     const value = await AsyncStorage.getItem(name);
@@ -30,91 +29,84 @@ const asyncStorage: PersistStorage<any> = {
   },
 };
 
-// Interface for a reaction
+// Interfaces
 interface Reaction {
-  uuid: string; // Unique identifier for the reaction
-  value: string; // Emoji representing the reaction
-  participantUuid: string; // UUID of the user who reacted
+  uuid: string;
+  value: string;
+  participantUuid: string;
 }
 
-// Interface for a message object
 interface Message {
   updatedAt: unknown;
-  uuid: string; // Unique identifier for each message
-  text: string; // Content of the message
-  sentAt: number; // Timestamp of when the message was sent
-  edited?: boolean; // Optional: Indicates if the message was edited
-  reactions?: Reaction[]; // Optional: Array of reactions
-  authorUuid?: string; // Optional: UUID of the author
-  attachments?: string[]; // Optional: Attachments for the message
+  uuid: string;
+  text: string;
+  sentAt: number;
+  edited?: boolean;
+  reactions?: Reaction[];
+  authorUuid?: string;
+  attachments?: string[];
   replyToMessageUuid?: string;
 }
 
-// Interface for a participant object
 interface Participant {
-  id: string; // Participant's UUID
-  name: string; // Participant's name
-  bio: string; // Participant's short bio
-  email: string; // Participant's email
-  jobTitle: string; // Participant's job title
-  avatarUrl: string; // Participant's avatar URL
-  createdAt: number; // Timestamp of creation
-  updatedAt: number; // Timestamp of last update
+  id: string;
+  name: string;
+  bio: string;
+  email: string;
+  jobTitle: string;
+  avatarUrl: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
-// Interface defining the chat store state
 interface ChatState {
   messages: Message[];
-  participants: Record<string, Participant>; // Map of participants by their IDs
-  replyingTo: string | null; // New state for tracking replies
-  setReplyingTo: (messageUuid: string | null) => void; // Action to set or clear reply
-  addMessage: (text: string) => Promise<void>; // Async function to send and add a new message
-  loadMessages: () => Promise<void>; // Async function to fetch and load all messages
-  loadOlderMessages: (refMessageUuid: string) => Promise<void>; // Lazy loading
-  fetchParticipants: () => Promise<void>; // Async function to fetch and store participants
-  editMessage: (id: string, newText: string) => void; // Function to edit an existing message
+  participants: Record<string, Participant>;
+  replyingTo: string | null;
+  setReplyingTo: (messageUuid: string | null) => void;
+  addMessage: (text: string) => Promise<void>;
+  loadMessages: () => Promise<void>;
+  loadOlderMessages: (refMessageUuid: string) => Promise<void>;
+  fetchParticipants: () => Promise<void>;
+  editMessage: (id: string, newText: string) => void;
   refreshUsers: () => Promise<void>;
   addReactionToMessage: (messageUuid: string, emoji: string) => void;
 }
 
-// Zustand store with persistence to manage chat messages
+// Zustand store
 const useChatStore = create<ChatState>()(
   persist(
     (set) => ({
+      // Initial state
       messages: [],
       participants: {},
+      replyingTo: null,
 
-      replyingTo: null, // State to hold the message being replied to (if any)
+      // Set the reply-to state
       setReplyingTo: (messageUuid: string | null) => {
-        set({ replyingTo: messageUuid }); // Update the reply state
+        set({ replyingTo: messageUuid });
       },
 
-      // Function to add a new message by sending it to the API and updating the store
+      // Add a new message
       addMessage: async (text: string): Promise<void> => {
         try {
-          // Send the message to the API
           const newMessageFromApi = await sendMessage(text);
-
-          // Update the state using 'set'
           set((state) => {
-            const replyingTo = state.replyingTo; // Access the current reply target
-
-            // Create the new message with `replyToMessageUuid` if `replyingTo` exists
             const newMessage: Message = {
               uuid: newMessageFromApi.id,
               text: newMessageFromApi.text,
               sentAt: new Date(
                 newMessageFromApi.createdAt || Date.now()
-              ).getTime(), // Convert date to timestamp
-              reactions: newMessageFromApi.reactions || [], // Reactions (if any)
-              authorUuid: newMessageFromApi.authorUuid, // Author
-              attachments: newMessageFromApi.attachments || [], // Attachments
-              replyToMessageUuid: replyingTo || undefined, // Add `replyToMessageUuid` only if it exists
+              ).getTime(),
+              reactions: newMessageFromApi.reactions || [],
+              authorUuid: newMessageFromApi.authorUuid,
+              attachments: newMessageFromApi.attachments || [],
+              replyToMessageUuid: state.replyingTo || undefined,
+              updatedAt: newMessageFromApi.updatedAt || Date.now(),
             };
-
             return {
-              messages: [...state.messages, newMessage], // Add the new message
-              replyingTo: null, // Clear the reply state after sending
+              messages: [...state.messages, newMessage],
+              replyingTo: null,
             };
           });
         } catch (error) {
@@ -122,13 +114,11 @@ const useChatStore = create<ChatState>()(
         }
       },
 
-      // Function to load all messages from the API and update the store
+      // Load all messages
       loadMessages: async (): Promise<void> => {
         try {
           const allMessagesFromApi = await fetchAllMessages();
           // const latestMessagesFromApi = await fetchLatestMessages();
-
-          // Transform API response into the expected format
           const messages: Message[] = allMessagesFromApi.map((msg: any) => ({
             uuid: msg.id || msg.uuid,
             text: msg.text || "No content",
@@ -136,20 +126,18 @@ const useChatStore = create<ChatState>()(
             reactions: msg.reactions || [],
             authorUuid: msg.authorUuid,
             attachments: msg.attachments || [],
+            updatedAt: msg.updatedAt || Date.now(),
           }));
-
-          // Update the store with all messages (sorted in ascending order)
           set({ messages: messages.reverse() });
         } catch (error) {
           console.error("Error loading all messages:", error);
         }
       },
 
+      // Load older messages
       loadOlderMessages: async (refMessageUuid: string): Promise<void> => {
         try {
           const olderMessagesFromApi = await fetchOlderMessages(refMessageUuid);
-
-          // Transform API response into the expected format
           const olderMessages: Message[] = olderMessagesFromApi.map(
             (msg: any) => ({
               uuid: msg.id || msg.uuid,
@@ -158,163 +146,109 @@ const useChatStore = create<ChatState>()(
               reactions: msg.reactions || [],
               authorUuid: msg.authorUuid,
               attachments: msg.attachments || [],
+              updatedAt: msg.updatedAt || Date.now(),
             })
           );
-
           set((state) => {
-            // Filter out any duplicate messages already in the state
-            const existingMessageUuids = new Set(
+            const existingUuids = new Set(
               state.messages.map((msg) => msg.uuid)
             );
             const filteredMessages = olderMessages.filter(
-              (msg) => !existingMessageUuids.has(msg.uuid)
+              (msg) => !existingUuids.has(msg.uuid)
             );
-
-            // Combine, reverse older messages, and sort everything by `sentAt`
             return {
               messages: [...filteredMessages.reverse(), ...state.messages].sort(
                 (a, b) => a.sentAt - b.sentAt
               ),
             };
           });
-
-          // Optional: Log to verify the new state of messages
-          console.log(
-            "Messages after loading older messages:",
-            useChatStore.getState().messages
-          );
         } catch (error) {
           console.error("Error loading older messages:", error);
         }
       },
 
-      /**
-       * Simulates adding or updating a reaction.
-       * This logic is temporary and assumes the backend will handle reactions properly in the future.
-       */
-      // Function to add or update a reaction for a message
+      // Add or update a reaction
       addReactionToMessage: (messageUuid: string, emoji: string): void => {
         set((state) => ({
           messages: state.messages.map((msg) => {
             if (msg.uuid === messageUuid) {
-              // Check if the user has already reacted with the same emoji
-              const existingUserReaction = msg.reactions?.find(
+              const existingReaction = msg.reactions?.find(
                 (reaction) =>
                   reaction.value === emoji && reaction.participantUuid === "you"
               );
-
-              if (existingUserReaction) {
-                // If the user already reacted with this emoji, do nothing
-                console.warn("You have already reacted with this emoji.");
-                return msg; // Return the message unchanged
-              }
-
-              // Find the reaction for the emoji (any user)
-              const existingReaction = msg.reactions?.find(
-                (reaction) => reaction.value === emoji
-              );
-
-              if (existingReaction) {
-                // Increment the count of the existing reaction
-                return {
-                  ...msg,
-                  reactions: msg.reactions?.map((reaction) =>
-                    reaction.value === emoji
-                      ? {
-                          ...reaction,
-                          count: (reaction.count || 1) + 1,
-                          participantUuid: "you", // Mark the reaction as yours
-                        }
-                      : reaction
-                  ),
-                };
-              } else {
-                // Add a new reaction if it does not exist
-                return {
-                  ...msg,
-                  reactions: [
-                    ...(msg.reactions || []),
-                    {
-                      uuid: Date.now().toString(),
-                      value: emoji,
-                      participantUuid: "you",
-                      count: 1,
-                    },
-                  ],
-                };
-              }
+              if (existingReaction) return msg;
+              return {
+                ...msg,
+                reactions: [
+                  ...(msg.reactions || []),
+                  {
+                    uuid: Date.now().toString(),
+                    value: emoji,
+                    participantUuid: "you",
+                  },
+                ],
+              };
             }
             return msg;
           }),
         }));
       },
 
-      // Function to load participants from the API and update the store
+      // Fetch and store participants
       fetchParticipants: async (): Promise<void> => {
         try {
           const participantsFromApi = await fetchParticipants();
-
-          // Transform the list of participants into a map
-          const participants: Record<string, Participant> =
-            participantsFromApi.reduce(
-              (acc: Record<string, Participant>, participant: any) => {
-                acc[participant.uuid] = {
-                  id: participant.uuid,
-                  name: participant.name,
-                  bio: participant.bio,
-                  email: participant.email,
-                  jobTitle: participant.jobTitle,
-                  avatarUrl: participant.avatarUrl,
-                  createdAt: participant.createdAt,
-                  updatedAt: participant.updatedAt,
-                };
-                return acc;
+          const participants = participantsFromApi.reduce(
+            (acc: Record<string, Participant>, participant: any) => ({
+              ...acc,
+              [participant.uuid]: {
+                id: participant.uuid,
+                name: participant.name,
+                bio: participant.bio,
+                email: participant.email,
+                jobTitle: participant.jobTitle,
+                avatarUrl: participant.avatarUrl,
+                createdAt: participant.createdAt,
+                updatedAt: participant.updatedAt,
               },
-              {}
-            );
-
+            }),
+            {}
+          );
           set({ participants });
         } catch (error) {
-          console.error("Error fetching participants from API:", error);
+          console.error("Error fetching participants:", error);
         }
       },
 
+      // Refresh participants
       refreshUsers: async (): Promise<void> => {
         try {
           const participantsFromApi = await fetchParticipants();
-
-          // Transform the list into a map of participants
-          const newParticipants: Record<string, Participant> =
-            participantsFromApi.reduce(
-              (acc: Record<string, Participant>, participant: any) => {
-                acc[participant.uuid] = {
-                  id: participant.uuid,
-                  name: participant.name,
-                  bio: participant.bio,
-                  email: participant.email,
-                  jobTitle: participant.jobTitle,
-                  avatarUrl: participant.avatarUrl,
-                  createdAt: participant.createdAt,
-                  updatedAt: participant.updatedAt,
-                };
-                return acc;
+          const newParticipants = participantsFromApi.reduce(
+            (acc: Record<string, Participant>, participant: any) => ({
+              ...acc,
+              [participant.uuid]: {
+                id: participant.uuid,
+                name: participant.name,
+                bio: participant.bio,
+                email: participant.email,
+                jobTitle: participant.jobTitle,
+                avatarUrl: participant.avatarUrl,
+                createdAt: participant.createdAt,
+                updatedAt: participant.updatedAt,
               },
-              {}
-            );
-
-          // Update the global state, merging new participants with existing ones
+            }),
+            {}
+          );
           set((state) => ({
-            participants: {
-              ...state.participants,
-              ...newParticipants,
-            },
+            participants: { ...state.participants, ...newParticipants },
           }));
         } catch (error) {
           console.error("Error refreshing participants:", error);
         }
       },
 
-      // Function to edit an existing message by its ID
+      // Edit a message
       editMessage: (id: string, newText: string): void => {
         set((state) => ({
           messages: state.messages.map((msg) =>
@@ -324,8 +258,8 @@ const useChatStore = create<ChatState>()(
       },
     }),
     {
-      name: "chat-storage", // Name for persistence storage
-      storage: asyncStorage, // Use custom AsyncStorage wrapper
+      name: "chat-storage",
+      storage: asyncStorage,
     }
   )
 );

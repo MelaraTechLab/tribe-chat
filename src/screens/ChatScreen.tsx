@@ -1,98 +1,119 @@
 /**
  * ChatScreen Component
  * --------------------
- * This component serves as the main chat interface, combining:
- * - A list of messages with participant and image handling.
- * - An input bar for sending messages.
- * - A modal for viewing participant details.
- * - A modal for previewing attached images.
+ * Main chat interface including:
+ * - Message list with participant and image handling.
+ * - Input bar for sending messages.
+ * - Modals for participant details and image previews.
  */
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { View, FlatList } from "react-native";
 import useChatStore from "../store/useChatStore";
 import ChatInput from "../components/ChatInput";
 import MessageList from "../components/MessageList";
 import ParticipantModal from "../components/ParticipantModal";
 import { chatStyles } from "../styles/chatScreenStyles";
-import { Attachment, Participant } from "../types/chatTypes"; // Import necessary types
+import { Attachment, Participant } from "../types/chatTypes";
 import ImagePreviewModal from "../components/ImagePreviewModal";
 
 const ChatScreen: React.FC = () => {
-  const { messages, loadMessages, loadOlderMessages } = useChatStore(); // Load messages from the global store
-  const [modalVisible, setModalVisible] = useState<boolean>(false); // State for participant modal visibility
+  // Global state for messages and functions
+  const { messages, loadMessages, loadOlderMessages } = useChatStore();
+
+  // State management for modals
+  const [isParticipantModalVisible, setParticipantModalVisible] =
+    useState(false);
   const [selectedParticipant, setSelectedParticipant] =
-    useState<Participant | null>(null); // Selected participant details
-  const flatListRef = useRef<FlatList>(null); // Reference to FlatList for scrolling
+    useState<Participant | null>(null);
 
-  // State for image preview modal
-  const [imagePreviewVisible, setImagePreviewVisible] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<{ url: string }[]>([]); // Currently selected images
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0); // Index of the selected image
+  const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<Attachment[]>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
 
-  // Opens the image preview modal with the selected attachments and index
-  const openImagePreview = (attachments: Attachment[], index: number) => {
-    setSelectedImages(attachments); // Update selected images
-    setSelectedImageIndex(index); // Set the initial image index
-    setImagePreviewVisible(true); // Show the modal
-  };
+  // Reference for FlatList to enable scrolling
+  const flatListRef = useRef<FlatList>(null);
 
-  // Closes the image preview modal
-  const closeImagePreview = () => {
+  // Function to open the image preview modal
+  const handleOpenImagePreview = useCallback(
+    (attachments: { url: string }[], index: number) => {
+      const validAttachments: Attachment[] = attachments.map(
+        (attachment, idx) => ({
+          uuid: `temp-uuid-${idx}`,
+          url: attachment.url,
+          type: "image",
+        })
+      );
+      setSelectedImages(validAttachments);
+      setSelectedImageIndex(index);
+      setImagePreviewVisible(true);
+    },
+    []
+  );
+
+  // Function to close the image preview modal
+  const handleCloseImagePreview = useCallback(() => {
     setImagePreviewVisible(false);
-  };
-
-  // Load messages when the component mounts
-  useEffect(() => {
-    loadMessages();
   }, []);
 
+  // Function to open the participant details modal
+  const handleOpenParticipantModal = useCallback((participant: Participant) => {
+    setSelectedParticipant(participant);
+    setParticipantModalVisible(true);
+  }, []);
+
+  // Function to close the participant modal
+  const handleCloseParticipantModal = useCallback(() => {
+    setParticipantModalVisible(false);
+    setSelectedParticipant(null);
+  }, []);
+
+  // Initial message loading on component mount
   useEffect(() => {
-    // Load all messages on app initialization
-    const initializeMessages = async () => {
-      await useChatStore.getState().loadAllMessages();
-      await useChatStore.getState().loadMessages(); // Load latest messages after
+    const initializeChat = async () => {
+      try {
+        await useChatStore.getState().loadMessages(); // Load the latest messages
+      } catch (error) {
+        console.error("Failed to initialize chat:", error);
+      }
     };
 
-    initializeMessages();
+    initializeChat();
   }, []);
-
-  // Opens the participant modal with selected participant details
-  const handleOpenModal = (participant: Participant) => {
-    setSelectedParticipant(participant);
-    setModalVisible(true);
-  };
-
-  // Closes the participant modal
-  const handleCloseModal = () => {
-    setModalVisible(false);
-    setSelectedParticipant(null);
-  };
 
   return (
     <View style={chatStyles.container}>
-      {/* Render the message list */}
+      {/* Message list component */}
       <MessageList
-        messages={messages}
+        messages={messages.map((msg) => ({
+          ...msg,
+          updatedAt: msg.updatedAt || Date.now(),
+          reactions: msg.reactions || [],
+          attachments: msg.attachments || [],
+        }))}
         flatListRef={flatListRef}
-        onOpenParticipantModal={handleOpenModal} // Pass function to handle participant modal
-        onOpenImagePreview={openImagePreview} // Pass function to handle image preview
+        onOpenParticipantModal={handleOpenParticipantModal}
+        onOpenImagePreview={handleOpenImagePreview}
         loadOlderMessages={loadOlderMessages}
       />
-      {/* Render the chat input bar */}
+      {/* Input bar for sending messages */}
       <ChatInput flatListRef={flatListRef} />
-      {/* Render the participant modal */}
+      {/* Participant details modal */}
       <ParticipantModal
-        visible={modalVisible}
+        visible={isParticipantModalVisible}
         participant={selectedParticipant}
-        onClose={handleCloseModal}
+        onClose={handleCloseParticipantModal}
       />
-      {/* Render the image preview modal */}
+      {/* Image preview modal */}
       <ImagePreviewModal
-        visible={imagePreviewVisible}
-        attachments={selectedImages} // Selected images
-        initialIndex={selectedImageIndex} // Initial image index
-        onClose={closeImagePreview}
+        visible={isImagePreviewVisible}
+        attachments={selectedImages.map((img) => ({
+          ...img,
+          type: img.type || "image",
+          uuid: img.uuid || "",
+        }))}
+        initialIndex={selectedImageIndex}
+        onClose={handleCloseImagePreview}
       />
     </View>
   );

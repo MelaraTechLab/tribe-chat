@@ -1,49 +1,58 @@
 /**
  * ChatInput Component
  *
- * This component provides a text input and a send button for sending messages in the chat.
- * It also handles replying to messages by displaying the original message being replied to
- * and allowing the user to cancel the reply.
+ * This component provides an input area for sending chat messages.
+ * It supports replying to messages by displaying the quoted message being replied to
+ * and offers functionality to cancel the reply.
  */
 
 import React, { useState } from "react";
-import { View, TextInput, Button, Text, TouchableOpacity } from "react-native";
+import {
+  View,
+  TextInput,
+  Button,
+  Text,
+  TouchableOpacity,
+  FlatList,
+} from "react-native";
 import useChatStore from "../store/useChatStore";
 import { chatStyles } from "../styles/chatScreenStyles";
-import { FlatList } from "react-native";
 
 /**
- * Get the text of the quoted message based on its UUID.
+ * Retrieves the text of the quoted message using its UUID.
  * @param replyToMessageUuid - The UUID of the message being replied to.
- * @returns The text of the quoted message or an empty string if not found.
+ * @returns The quoted message's text or an empty string if not found.
  */
 const getQuotedMessageText = (replyToMessageUuid: string): string => {
-  const messages = useChatStore.getState().messages;
+  const { messages } = useChatStore.getState(); // Access global state
   const quotedMessage = messages.find((msg) => msg.uuid === replyToMessageUuid);
   return quotedMessage?.text || "";
 };
 
 type ChatInputProps = {
-  flatListRef: React.RefObject<FlatList>;
+  flatListRef: React.RefObject<FlatList<any>>;
 };
 
 const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
-  const [inputText, setInputText] = useState<string>(""); // Local state for the input text
-  const addMessage = useChatStore((state) => state.addMessage); // Function to add a new message to the global state
-  const replyingTo = useChatStore((state) => state.replyingTo); // Message being replied to
-  const setReplyingTo = useChatStore((state) => state.setReplyingTo); // Action to clear reply state
+  // Local state for managing input text
+  const [inputText, setInputText] = useState<string>("");
+
+  // Zustand state and actions
+  const addMessage = useChatStore((state) => state.addMessage);
+  const replyingTo = useChatStore((state) => state.replyingTo);
+  const setReplyingTo = useChatStore((state) => state.setReplyingTo);
 
   /**
    * Handles sending a message.
-   * Clears the input field, clears replyingTo, and scrolls to the latest message.
+   * Resets the input field and reply state, and scrolls to the latest message.
    */
   const handleSendMessage = () => {
     if (inputText.trim()) {
-      addMessage(inputText); // Add the message to the global state
-      setInputText(""); // Clear the input field
-      setReplyingTo(null); // Clear the reply state after sending
+      addMessage(inputText); // Add message to global state
+      setInputText(""); // Clear input field
+      setReplyingTo(null); // Reset reply state
 
-      // Scroll to the last message
+      // Smooth scroll to the latest message
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -52,7 +61,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
 
   return (
     <View style={chatStyles.inputContainer}>
-      {/* Display the message being replied to, if any */}
+      {/* Quoted message display */}
       {replyingTo && (
         <View style={chatStyles.replyingToContainer}>
           <Text style={chatStyles.replyingToLabel}>Replying to:</Text>
@@ -64,7 +73,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
           </TouchableOpacity>
         </View>
       )}
-      {/* Text input and send button */}
+
+      {/* Input field and send button */}
       <View style={chatStyles.textInputRow}>
         <TextInput
           style={chatStyles.input}
@@ -72,7 +82,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
           value={inputText}
           onChangeText={setInputText}
         />
-        <Button title="Send" onPress={handleSendMessage} />
+        <Button
+          title="Send"
+          onPress={handleSendMessage}
+          disabled={!inputText.trim()} // Disable if input is empty
+        />
       </View>
     </View>
   );

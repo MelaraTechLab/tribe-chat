@@ -1,63 +1,92 @@
 /**
  * ParticipantModal.tsx
  *
- * This component displays a modal with information about a selected participant.
- * It includes details such as their avatar, name, bio, job title, and email.
- * The modal is triggered by passing a `Participant` object and can be closed with a button.
+ * Displays a modal with detailed information about a selected participant.
+ * The modal includes their avatar, name, bio, job title, and email.
+ * It can be closed using the provided `onClose` function.
  */
 
 import React from "react";
 import { Modal, View, Text, Image, Button } from "react-native";
 import { chatStyles } from "../styles/chatScreenStyles";
-import { Participant } from "../types/chatTypes"; // Import the participant type
+import { Participant } from "../types/chatTypes";
 
-// Define the props for the component
 type ParticipantModalProps = {
-  visible: boolean; // Determines if the modal is visible
-  participant: Participant | null; // The selected participant (null if none)
-  onClose: () => void; // Function to close the modal
+  visible: boolean; // Determines modal visibility
+  participant: Participant | null; // The participant to display, null when no selection
+  onClose: () => void; // Callback to close the modal
 };
 
+/**
+ * Component: ParticipantModal
+ * A reusable modal component to display detailed participant information.
+ */
 const ParticipantModal: React.FC<ParticipantModalProps> = ({
   visible,
   participant,
   onClose,
 }) => {
-  // Return null if no participant is provided
+  // Prevent rendering if no participant is passed
   if (!participant) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide" // Smooth slide-in animation for better UX
+    >
       <View style={chatStyles.modalContainer}>
         <View style={chatStyles.modalContent}>
-          {/* Participant's avatar */}
+          {/* Avatar */}
           {participant.avatarUrl && (
             <Image
               source={{ uri: participant.avatarUrl }}
               style={chatStyles.modalAvatar}
+              accessibilityLabel="Participant's avatar"
             />
           )}
 
-          {/* Participant's name */}
-          <Text style={chatStyles.modalName}>{participant.name}</Text>
+          {/* Name */}
+          <Text style={chatStyles.modalName} accessibilityRole="header">
+            {participant.name}
+          </Text>
 
-          {/* Participant's bio */}
+          {/* Bio */}
           {participant.bio && (
-            <Text style={chatStyles.modalBio}>{participant.bio}</Text>
+            <Text
+              style={chatStyles.modalBio}
+              accessibilityLabel="Participant bio"
+            >
+              {participant.bio}
+            </Text>
           )}
 
-          {/* Participant's job title */}
+          {/* Job Title */}
           {participant.jobTitle && (
-            <Text style={chatStyles.modalJob}>{participant.jobTitle}</Text>
+            <Text
+              style={chatStyles.modalJob}
+              accessibilityLabel="Participant job title"
+            >
+              {participant.jobTitle}
+            </Text>
           )}
 
-          {/* Participant's email */}
+          {/* Email */}
           {participant.email && (
-            <Text style={chatStyles.modalEmail}>{participant.email}</Text>
+            <Text
+              style={chatStyles.modalEmail}
+              accessibilityLabel="Participant email"
+            >
+              {participant.email}
+            </Text>
           )}
 
-          {/* Button to close the modal */}
-          <Button title="Close" onPress={onClose} />
+          {/* Close Button */}
+          <Button
+            title="Close"
+            onPress={onClose}
+            accessibilityLabel="Close modal button"
+          />
         </View>
       </View>
     </Modal>

@@ -1,92 +1,68 @@
 const API_BASE = "http://dummy-chat-server.tribechat.pro/api";
 
-export const fetchAllMessages = async () => {
-  const response = await fetch(`${API_BASE}/messages/all`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch messages");
-  }
-  return response.json();
-};
-
-export const fetchParticipants = async () => {
+// Helper function to perform API requests with error handling
+const apiRequest = async (url: string, options?: RequestInit) => {
   try {
-    const response = await fetch(`${API_BASE}/participants/all`);
+    const response = await fetch(url, options);
     if (!response.ok) {
-      throw new Error('Failed to fetch participants');
+      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
     }
-    const data = await response.json();
-    return data;
+    return response.json();
   } catch (error) {
-    console.error('Error fetching participants:', error);
+    console.error(`Request to ${url} failed:`, error);
     throw error;
   }
 };
 
-export const fetchLatestMessages = async () => {
-  const response = await fetch(`${API_BASE}/messages/latest`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch latest messages");
-  }
-  return response.json();
+// Fetch all messages
+export const fetchAllMessages = async () => {
+  return apiRequest(`${API_BASE}/messages/all`);
 };
 
+// Fetch all participants
+export const fetchParticipants = async () => {
+  return apiRequest(`${API_BASE}/participants/all`);
+};
+
+// Fetch the latest messages (limit: 25)
+export const fetchLatestMessages = async () => {
+  return apiRequest(`${API_BASE}/messages/latest`);
+};
+
+// Send a new message
 export const sendMessage = async (text: string) => {
-  const response = await fetch(`${API_BASE}/messages/new`, {
+  return apiRequest(`${API_BASE}/messages/new`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
-  if (!response.ok) {
-    throw new Error("Failed to send message");
-  }
-  return response.json();
 };
 
-// Function to add a reaction to a message
+// Add a reaction to a specific message
 export const addReaction = async (messageUuid: string, reaction: string) => {
-  const response = await fetch(`${API_BASE}/messages/${messageUuid}/reactions`, {
+  return apiRequest(`${API_BASE}/messages/${messageUuid}/reactions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reaction }),
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to add reaction");
-  }
-
-  return response.json(); // Return the updated message
 };
 
+// Fetch older messages relative to a specific message
 export const fetchOlderMessages = async (refMessageUuid: string) => {
-  const response = await fetch(`${API_BASE}/messages/older/${refMessageUuid}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch older messages from ${refMessageUuid}`);
-  }
-  return response.json();
+  return apiRequest(`${API_BASE}/messages/older/${refMessageUuid}`);
 };
 
+// Fetch messages updated after a specific timestamp
 export const fetchUpdatedMessages = async (sinceTimestamp: number) => {
-  const response = await fetch(`${API_BASE}/messages/updates/${sinceTimestamp}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch updated messages since ${sinceTimestamp}`);
-  }
-  return response.json();
+  return apiRequest(`${API_BASE}/messages/updates/${sinceTimestamp}`);
 };
 
+// Fetch participants updated after a specific timestamp
 export const fetchUpdatedParticipants = async (sinceTimestamp: number) => {
-  const response = await fetch(
-    `${API_BASE}/participants/updates/${sinceTimestamp}`
-  );
-  if (!response.ok) {
-    throw new Error(`Failed to fetch updated participants since ${sinceTimestamp}`);
-  }
-  return response.json();
+  return apiRequest(`${API_BASE}/participants/updates/${sinceTimestamp}`);
 };
 
+// Fetch session information (session UUID and API version)
 export const fetchSessionInfo = async () => {
-  const response = await fetch(`${API_BASE}/info`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch session info");
-  }
-  return response.json();
+  return apiRequest(`${API_BASE}/info`);
 };

@@ -2,21 +2,21 @@
  * MessageItem Component
  * ---------------------
  * This component is responsible for rendering individual chat messages.
- * It displays the author's details, message content, any attached images,
- * reactions, and a timestamp.
- *
- * Props:
- * - message: The message object containing the text, attachments, and reactions.
- * - onOpenParticipantModal: Function to open a modal with participant details.
- * - onOpenImagePreview: Function to open the image preview modal with attachments.
+ * It handles:
+ * - Displaying the author's avatar, name, and message content.
+ * - Showing edited indicators for updated messages.
+ * - Rendering image attachments and allowing image previews.
+ * - Grouping consecutive messages.
+ * - Displaying reactions and adding new ones.
+ * - Quoted messages for replies.
+ * - Timestamp and reply actions.
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { chatStyles } from "../styles/chatScreenStyles";
 import useChatStore from "../store/useChatStore";
 import { Attachment, Message, Participant, Reaction } from "../types/chatTypes";
-import { useEffect, useState } from "react";
 import ReactionSelectorModal from "./ReactionSelectorModal";
 
 type MessageItemProps = {
@@ -33,46 +33,60 @@ const MessageItem: React.FC<MessageItemProps> = ({
   isGrouped = false,
 }) => {
   const participants = useChatStore((state) => state.participants);
-  const author = participants[message.authorUuid] || { name: "Unknown" };
   const refreshUsers = useChatStore((state) => state.refreshUsers);
+  const addReaction = useChatStore((state) => state.addReactionToMessage);
+  const setReplyingTo = useChatStore((state) => state.setReplyingTo);
+  const messages = useChatStore((state) => state.messages);
+
+  const defaultAuthor: Participant = {
+    uuid: "unknown",
+    name: "Unknown",
+    avatarUrl: "",
+    bio: "",
+    jobTitle: "",
+    email: "",
+  };
+  const author = participants[message.authorUuid] || defaultAuthor;
+  const adjustedAuthor: Participant = {
+    ...author,
+    uuid: author.id,
+  };
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isUnknown, setIsUnknown] = useState(false);
+
+  // Check for unknown participants and refresh the list if necessary
+  useEffect(() => {
+    if (message.authorUuid && !participants[message.authorUuid]) {
+      setIsUnknown(true);
+      refreshUsers();
+    }
+  }, [message.authorUuid, participants, refreshUsers]);
 
   /**
-   * Counts the occurrences of a specific reaction.
+   * Helper function to count occurrences of a specific reaction.
    * @param reactionValue - The emoji or reaction value.
-   * @returns Number of occurrences for the specified reaction.
+   * @returns Total count of the specified reaction.
    */
-  const countReactions = (reactionValue: string) => {
+  const countReactions = (reactionValue: string): number => {
     return (
       message.reactions
         ?.filter((reaction: Reaction) => reaction.value === reactionValue)
-        .reduce((acc, reaction) => acc + (reaction.count || 1), 0) || 0
+        .reduce((acc, reaction) => acc + (reaction.count ?? 1), 0) || 0
     );
   };
-
-  // State to track if the author is unknown
-  const [isUnknown, setIsUnknown] = useState(false);
-
-  // UseEffect to check for unknown participants and refresh the list if necessary
-  useEffect(() => {
-    if (message.authorUuid && !participants[message.authorUuid]) {
-      setIsUnknown(true); // Mark as unknown
-      refreshUsers(); // Trigger a refresh of the participants list
-    }
-  }, [message.authorUuid, participants, refreshUsers]);
 
   return (
     <View
       style={[
         chatStyles.messageItem,
-        isGrouped && chatStyles.groupedMessageItem, // Apply grouped styles if needed
+        isGrouped && chatStyles.groupedMessageItem, // Apply grouped styling
       ]}
     >
-      {/* Author information (only show if not grouped) */}
+      {/* Author's information (only shown if not grouped) */}
       {!isGrouped && (
         <TouchableOpacity
           style={chatStyles.authorContainer}
-          onPress={() => onOpenParticipantModal(author)}
+          onPress={() => onOpenParticipantModal(adjustedAuthor)}
         >
           {author.avatarUrl && (
             <Image
@@ -84,7 +98,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </TouchableOpacity>
       )}
 
-      {/* Message content */}
+      {/* Message content with edited indicator */}
       <Text style={chatStyles.messageText}>
         {message.text}
         {message.updatedAt && message.sentAt !== message.updatedAt && (
@@ -97,16 +111,14 @@ const MessageItem: React.FC<MessageItemProps> = ({
         <View style={chatStyles.quotedMessageContainer}>
           <Text style={chatStyles.quotedMessageLabel}>Replying to:</Text>
           <Text style={chatStyles.quotedMessageText}>
-            {useChatStore
-              .getState()
-              .messages.find((msg) => msg.uuid === message.replyToMessageUuid)
+            {messages.find((msg) => msg.uuid === message.replyToMessageUuid)
               ?.text || "Original message not found"}
           </Text>
         </View>
       )}
 
-      {/* Attachments */}
-      {message.attachments?.length > 0 && (
+      {/* Image attachments */}
+      {Array.isArray(message.attachments) && message.attachments.length > 0 && (
         <View style={chatStyles.attachmentsContainer}>
           {message.attachments.map((attachment, index) =>
             attachment.type === "image" ? (
@@ -126,8 +138,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </View>
       )}
 
-      {/* Reactions */}
-      {message.reactions && message.reactions.length > 0 && (
+      {/* Reactions section */}
+      {Array.isArray(message.reactions) && message.reactions.length > 0 && (
         <View style={chatStyles.reactionsContainer}>
           {Array.from(
             new Set(message.reactions.map((reaction) => reaction.value))
@@ -135,11 +147,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
             <TouchableOpacity
               key={index}
               style={chatStyles.reactionItem}
-              onPress={() =>
-                useChatStore
-                  .getState()
-                  .addReactionToMessage(message.uuid, reactionValue)
-              }
+              onPress={() => addReaction(message.uuid, reactionValue)}
             >
               <Text style={chatStyles.reactionEmoji}>{reactionValue}</Text>
               <Text style={chatStyles.reactionCount}>
@@ -148,7 +156,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
             </TouchableOpacity>
           ))}
 
-          {/* Button to add new reaction */}
+          {/* Add reaction button */}
           <TouchableOpacity
             style={chatStyles.addReactionButton}
             onPress={() => setModalVisible(true)}
@@ -162,15 +170,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
       <ReactionSelectorModal
         isVisible={isModalVisible}
         onClose={() => setModalVisible(false)}
-        onSelectReaction={(reaction) =>
-          useChatStore.getState().addReactionToMessage(message.uuid, reaction)
-        }
+        onSelectReaction={(reaction) => addReaction(message.uuid, reaction)}
       />
 
-      {/* Reply action */}
+      {/* Reply button */}
       <TouchableOpacity
         style={chatStyles.replyButton}
-        onPress={() => useChatStore.getState().setReplyingTo(message.uuid)}
+        onPress={() => setReplyingTo(message.uuid)}
       >
         <Text style={chatStyles.replyButtonText}>Reply</Text>
       </TouchableOpacity>
