@@ -30,7 +30,7 @@ const getQuotedMessageText = (replyToMessageUuid: string): string => {
 };
 
 type ChatInputProps = {
-  flatListRef: React.RefObject<FlatList<any>>;
+  flatListRef: React.RefObject<FlatList<any>>; // Reference to the FlatList for scrolling
 };
 
 const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
@@ -44,7 +44,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
 
   /**
    * Handles sending a message.
-   * Resets the input field and reply state, and scrolls to the latest message.
+   * Resets the input field and reply state, and ensures the new message appears at the bottom.
    */
   const handleSendMessage = () => {
     if (inputText.trim()) {
@@ -52,9 +52,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ flatListRef }) => {
       setInputText(""); // Clear input field
       setReplyingTo(null); // Reset reply state
 
-      // Smooth scroll to the latest message
+      // Scroll to the most recent message
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        if (flatListRef.current) {
+          flatListRef.current.scrollToIndex({
+            index: 0, // Index of the most recent message (as we're using inverted)
+            animated: true,
+          });
+        }
       }, 100);
     }
   };

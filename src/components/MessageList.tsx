@@ -57,7 +57,7 @@ const MessageList: React.FC<MessageListProps> = ({
     let lastDate: string | null = null;
     let lastAuthorUuid: string | null = null;
 
-    messages.forEach((message) => {
+    messages.forEach((message, index) => {
       const messageDate = new Date(message.sentAt);
       const today = new Date();
       const yesterday = new Date(today);
@@ -80,9 +80,15 @@ const MessageList: React.FC<MessageListProps> = ({
 
       // Mark messages as grouped if they're from the same author as the last message
       const isGrouped = message.authorUuid === lastAuthorUuid;
-      grouped.push({ type: "message", message, isGrouped });
 
-      lastAuthorUuid = message.authorUuid; // Update the last author's UUID
+      grouped.push({
+        type: "message",
+        message,
+        isGrouped: index !== 0 && isGrouped, // Ensure first message always shows metadata
+      });
+
+      // Update the last author's UUID
+      lastAuthorUuid = message.authorUuid;
     });
 
     return grouped;
@@ -141,6 +147,9 @@ const MessageList: React.FC<MessageListProps> = ({
           )
         }
         inverted // Shows newest messages at the bottom
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0, // Keep the bottom-most message visible
+        }}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
         style={chatStyles.messageList}

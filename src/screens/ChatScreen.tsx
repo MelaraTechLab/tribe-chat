@@ -51,6 +51,19 @@ const ChatScreen: React.FC = () => {
     []
   );
 
+  // Load messages when the component mounts
+  useEffect(() => {
+    const initializeChat = async () => {
+      try {
+        await loadMessages(); // Load the latest messages
+      } catch (error) {
+        console.error("Failed to initialize chat:", error);
+      }
+    };
+
+    initializeChat();
+  }, [loadMessages]);
+
   // Function to close the image preview modal
   const handleCloseImagePreview = useCallback(() => {
     setImagePreviewVisible(false);
@@ -68,36 +81,20 @@ const ChatScreen: React.FC = () => {
     setSelectedParticipant(null);
   }, []);
 
-  // Initial message loading on component mount
-  useEffect(() => {
-    const initializeChat = async () => {
-      try {
-        await useChatStore.getState().loadMessages(); // Load the latest messages
-      } catch (error) {
-        console.error("Failed to initialize chat:", error);
-      }
-    };
-
-    initializeChat();
-  }, []);
-
   return (
     <View style={chatStyles.container}>
       {/* Message list component */}
       <MessageList
-        messages={messages.map((msg) => ({
-          ...msg,
-          updatedAt: msg.updatedAt || Date.now(),
-          reactions: msg.reactions || [],
-          attachments: msg.attachments || [],
-        }))}
+        messages={messages}
         flatListRef={flatListRef}
         onOpenParticipantModal={handleOpenParticipantModal}
         onOpenImagePreview={handleOpenImagePreview}
         loadOlderMessages={loadOlderMessages}
       />
+
       {/* Input bar for sending messages */}
       <ChatInput flatListRef={flatListRef} />
+
       {/* Participant details modal */}
       <ParticipantModal
         visible={isParticipantModalVisible}

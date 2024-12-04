@@ -87,10 +87,11 @@ const useChatStore = create<ChatState>()(
         set({ replyingTo: messageUuid });
       },
 
-      // Add a new message
+      // Add a new message to the store and scroll to the latest message
       addMessage: async (text: string): Promise<void> => {
         try {
           const newMessageFromApi = await sendMessage(text);
+
           set((state) => {
             const newMessage: Message = {
               uuid: newMessageFromApi.id,
@@ -99,13 +100,19 @@ const useChatStore = create<ChatState>()(
                 newMessageFromApi.createdAt || Date.now()
               ).getTime(),
               reactions: newMessageFromApi.reactions || [],
-              authorUuid: newMessageFromApi.authorUuid,
+              authorUuid: "you", // Ensure the current user is the author
               attachments: newMessageFromApi.attachments || [],
               replyToMessageUuid: state.replyingTo || undefined,
               updatedAt: newMessageFromApi.updatedAt || Date.now(),
             };
+
+            // Add the new message at the beginning to match the expected order
+            const updatedMessages = [newMessage, ...state.messages];
+
+            console.log("Updated messages:", updatedMessages); // Debugging
+
             return {
-              messages: [...state.messages, newMessage],
+              messages: updatedMessages, // Update state with the new message
               replyingTo: null,
             };
           });
